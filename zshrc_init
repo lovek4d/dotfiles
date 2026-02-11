@@ -1,0 +1,30 @@
+# source others
+source $HOME/.lovek4d/.zshrc_git
+source $HOME/.lovek4d/.zshrc_fun
+
+# general
+alias dev='cd ~/dev'
+
+# python basics
+alias python='python3'
+alias wdvenv='source .venv/bin/activate'
+
+# nvm + autocomplete
+export NVM_DIR="$HOME/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
+[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+
+# zshrc utils
+alias zvim='${EDITOR:-vim} ~/.zshrc'
+alias zsrc='source ~/.zshrc'
+alias zup='zsvim && zssrc'
+
+# docker
+alias docker_prune='docker system prune -a --volumes'
+
+# autocomplete
+if command -v brew >/dev/null 2>&1; then
+  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+fi
+autoload -Uz promptinit && promptinit
+autoload -Uz compinit && compinit
