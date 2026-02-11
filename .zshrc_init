@@ -1,6 +1,6 @@
 # source others
-source $HOME/.lovek4d/.zshrc_git
-source $HOME/.lovek4d/.zshrc_fun
+source $HOME/dev/dotfiles/.zshrc_git
+source $HOME/dev/dotfiles/.zshrc_funcs
 
 # general
 alias dev='cd ~/dev'

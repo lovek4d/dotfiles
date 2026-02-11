@@ -1,7 +1,7 @@
-Example .zshrc:
+Clone into `$HOME/dev/` and source init in .zshrc:
 
 ```
-source /Users/lovek4d/dev/dotfiles/.zshrc_init
+source $HOME/dev/dotfiles/.zshrc_init
 
 eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
