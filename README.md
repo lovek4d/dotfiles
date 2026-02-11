@@ -1,7 +1,7 @@
-Example zshrc init
+Example .zshrc:
 
 ```
-source /Users/lkharod/.lovek4d/.zshrc_init
+source /Users/lovek4d/dev/dotfiles/.zshrc_init
 
 eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
