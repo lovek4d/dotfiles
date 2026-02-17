@@ -1,5 +1,6 @@
 # core
 alias g='git'
+alias ga='git add'
 alias gaa='git add .'
 alias gst='git status'
 alias gpl='git pull --ff-only'
@@ -25,6 +26,7 @@ alias gsdr='git stash drop'
 
 # commits
 alias gc='git commit'
+alias gcm='git commit -m'
 alias gca='git commit --amend'
 alias gcan='git commit --amend --no-edit'
 
@@ -39,21 +41,28 @@ alias gmtn='git merge -X theirs --no-edit'
 alias gcp='git cherry-pick'
 alias grb='git rebase'
 
-# branches
-alias gbr='git branch'
-alias gsw='git switch'
-alias gswap='git stash -m "switch staging" && git switch $1 && git stash pop'
-alias gco='git checkout'
+## merge upstream (auto-detect main/master)
+gum() {
+  local base
+  base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
+  [ -z "$base" ] && base=main
+  git fetch origin "$base" && git merge "origin/$base" --no-edit
+}
 
 # resets
 alias grh='git reset --hard'
 alias grs='git reset --soft'
 
 # copy diff (mac-centric)
-alias gdc='git diff --color --patience | pbcopy && echo "Copied diff to clipboard"'
+alias gdc='git diff | pbcopy && echo "Copied diff to clipboard"'
 
-# branch list select switch
-gswd() {
+# branches
+alias gbr='git branch'
+alias gco='git checkout'
+alias gswc='git switch --create'
+
+## switch branch (fzf select)
+gsw() {
   local branch
   branch=$(git branch --all --format='%(refname:short)' \
     | sed 's#^remotes/##' \
@@ -62,20 +71,26 @@ gswd() {
   [[ -n "$branch" ]] && git switch "$branch"
 }
 
-# merge upstream (auto-detect main/master)
-gum() {
-  local base
-  base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
-  [ -z "$base" ] && base=main
-  git fetch origin "$base" && git merge "origin/$base" --no-edit
+## swap branch with stash (fzf select)
+gswap() {
+  local branch
+  branch=$(git branch --format='%(refname:short)' \
+    | fzf --prompt='swap to> ' --height=40% --reverse)
+  [[ -z "$branch" ]] && return 1
+  git stash -m "switch staging" && git switch "$branch" && git stash pop
 }
 
-# delete branches by pattern
+## delete branches by pattern, or fzf select
 gdl() {
-  if [ -z "$1" ]; then
-    echo "usage: gdl <pattern>"; return 1
+  if [ -n "$1" ]; then
+    git branch | grep -E "$1" | sed 's/^\*//' | xargs -n1 git branch -D
+  else
+    local branches
+    branches=$(git branch --format='%(refname:short)' \
+      | fzf --multi --prompt='delete branch> ' --height=40% --reverse)
+    [[ -z "$branches" ]] && return 1
+    echo "$branches" | xargs -n1 git branch -D
   fi
-  git branch | grep -E "$1" | sed 's/^\*//' | xargs -n1 git branch -D
 }
 
 # pull all git repos in current dir
@@ -85,4 +100,43 @@ gpla() {
     echo "=== Pulling $dir ==="
     git -C "$dir" pull --ff-only
   done
+}
+
+# worktrees
+alias gwl='git worktree list'
+alias gwp='git worktree prune'
+
+## add worktree for existing branch (fzf select)
+gwa() {
+  local branch
+  branch=$(git branch --format='%(refname:short)' \
+    | fzf --prompt='worktree branch> ' --height=40% --reverse)
+  [[ -z "$branch" ]] && return 1
+  local root
+  root="$(git rev-parse --show-toplevel)"
+  local base_dir
+  base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
+  local target="$base_dir/$branch"
+  mkdir -p "$(dirname "$target")"
+  git worktree add "$target" "$branch"
+  echo "Worktree at: $target"
+}
+
+## cd to worktree (fzf select)
+gws() {
+  local selected
+  selected=$(git worktree list --porcelain \
+    | grep '^worktree ' \
+    | sed 's/^worktree //' \
+    | fzf --prompt='worktree> ' --height=40% --reverse)
+  [[ -n "$selected" ]] && cd "$selected"
+}
+
+## remove worktree (fzf select)
+gwd() {
+  local selected
+  selected=$(git worktree list \
+    | fzf --prompt='remove worktree> ' --height=40% --reverse \
+    | awk '{print $1}')
+  [[ -n "$selected" ]] && git worktree remove "$selected"
 }
