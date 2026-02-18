@@ -1,3 +1,11 @@
+# helpers
+__git_default_branch() {
+  local b
+  b="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
+  [[ -z "$b" ]] && b="$(git branch --list main master | head -1 | tr -d ' *')"
+  echo "${b:-main}"
+}
+
 # core
 alias g='git'
 alias ga='git add'
@@ -43,9 +51,7 @@ alias grb='git rebase'
 
 ## merge upstream (auto-detect main/master)
 gum() {
-  local base
-  base="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
-  [ -z "$base" ] && base=main
+  local base="$(__git_default_branch)"
   git fetch origin "$base" && git merge "origin/$base" --no-edit
 }
 
@@ -61,14 +67,23 @@ alias gbr='git branch'
 alias gco='git checkout'
 alias gswc='git switch --create'
 
-## switch branch (fzf select)
+## switch branch (inline or fzf select)
 gsw() {
-  local branch
-  branch=$(git branch --all --format='%(refname:short)' \
-    | sed 's#^remotes/##' \
-    | sort -u \
-    | fzf --prompt='switch> ' --height=40% --reverse)
-  [[ -n "$branch" ]] && git switch "$branch"
+  if [[ -n "$1" ]]; then
+    git switch "$1"
+  else
+    local branch
+    branch=$(git branch --all --format='%(refname:short)' \
+      | sed 's#^remotes/##' \
+      | sort -u \
+      | fzf --prompt='switch> ' --height=40% --reverse)
+    [[ -n "$branch" ]] && git switch "$branch"
+  fi
+}
+
+## switch to main/master (autodetect)
+gswm() {
+  git switch "$(__git_default_branch)"
 }
 
 ## swap branch with stash (fzf select)
