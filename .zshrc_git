@@ -27,10 +27,34 @@ alias glff='git log --all-match' # pass filename
 alias gs='git stash'
 alias gsm='git stash -m'
 alias gsl='git stash list'
-alias gsp='git stash pop'
 alias gsa='git stash apply'
 alias gss='git stash show -p'
-alias gsdr='git stash drop'
+
+## stash pop (inline or fzf select)
+gsp() {
+  if [[ -n "$1" ]]; then
+    git stash pop "$1"
+  else
+    local entry
+    entry=$(git stash list \
+      | fzf --prompt='pop stash> ' --height=40% --reverse)
+    [[ -z "$entry" ]] && return 1
+    git stash pop "${entry%%:*}"
+  fi
+}
+
+## stash drop (inline or fzf select)
+gsdr() {
+  if [[ -n "$1" ]]; then
+    git stash drop "$1"
+  else
+    local entry
+    entry=$(git stash list \
+      | fzf --prompt='drop stash> ' --height=40% --reverse)
+    [[ -z "$entry" ]] && return 1
+    git stash drop "${entry%%:*}"
+  fi
+}
 
 # commits
 alias gc='git commit'
