@@ -1,3 +1,10 @@
+# autocomplete (must be before sourcing files that use compdef)
+if command -v brew >/dev/null 2>&1; then
+  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+fi
+autoload -Uz promptinit && promptinit
+autoload -Uz compinit && compinit
+
 # source others
 source $HOME/dev/dotfiles/.zshrc_git
 source $HOME/dev/dotfiles/.zshrc_funcs
@@ -21,13 +28,6 @@ alias zup='zvim && zsrc'
 
 # docker
 alias docker_prune='docker system prune -a --volumes'
-
-# autocomplete
-if command -v brew >/dev/null 2>&1; then
-  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
-fi
-autoload -Uz promptinit && promptinit
-autoload -Uz compinit && compinit
 
 # brew shell init
 eval "$(/opt/homebrew/bin/brew shellenv)"
