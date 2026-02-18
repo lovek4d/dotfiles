@@ -17,7 +17,7 @@ export NVM_DIR="$HOME/.nvm"
 # zshrc utils
 alias zvim='${EDITOR:-vim} ~/.zshrc'
 alias zsrc='source ~/.zshrc'
-alias zup='zsvim && zssrc'
+alias zup='zvim && zsrc'
 
 # docker
 alias docker_prune='docker system prune -a --volumes'
