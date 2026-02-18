@@ -21,6 +21,9 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
 [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
 
+# dotfiles
+alias zpl='git -C ~/dev/dotfiles pull && source ~/.zshrc'
+
 # zshrc utils
 alias zvim='${EDITOR:-vim} ~/.zshrc'
 alias zsrc='source ~/.zshrc'
