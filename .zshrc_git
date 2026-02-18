@@ -1,4 +1,8 @@
 # helpers
+__git_stash_complete() {
+  compadd $(git stash list --format='%gd' 2>/dev/null)
+}
+
 __git_default_branch() {
   local b
   b="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
@@ -179,3 +183,7 @@ gwd() {
     | awk '{print $1}')
   [[ -n "$selected" ]] && git worktree remove "$selected"
 }
+
+# completions
+compdef _git-switch gsw
+compdef __git_stash_complete gsp gsdr
