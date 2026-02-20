@@ -175,4 +175,4 @@ gwd() {
 }
 
 # completions
-compdef _git-switch gsw
+compdef _git gsw=git-switch
