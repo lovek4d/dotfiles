@@ -7,7 +7,74 @@ __git_default_branch() {
 }
 
 # core
-alias g='git'
+g() {
+  if [[ $# -gt 0 ]]; then
+    git "$@"
+    return
+  fi
+  cat <<'EOF'
+git aliases:
+  core
+    ga     git add
+    gaa    git add .
+    gst    git status
+    gpl    git pull --ff-only
+    gps    git push
+    gfal   git fetch --all --prune
+  log
+    gl     git log
+    glo    git log --oneline
+    glg    git log --graph
+    glp    git log -p <n>
+    glfs   git log -S <str>
+    glff   git log --all-match <file>
+  stash
+    gs     git stash
+    gsp    git stash pop
+    gsd    git stash drop
+    gsm    git stash -m
+    gsl    git stash list
+    gsa    git stash apply
+    gss    git stash show -p
+    gspf   stash pop (fzf)
+    gsdf   stash drop (fzf)
+  commits
+    gc     git commit
+    gcm    git commit -m
+    gca    git commit --amend
+    gcan   amend --no-edit
+  merging
+    gm     git merge
+    gms    merge --squash
+    gmn    merge --no-edit
+    gmo    merge -X ours
+    gmt    merge -X theirs
+    gmon   -X ours --no-edit
+    gmtn   -X theirs --no-edit
+    gcp    git cherry-pick
+    grb    git rebase
+    gum    merge upstream main
+  resets
+    grh    git reset --hard
+    grs    git reset --soft
+    gdc    copy diff to clipboard
+  branches
+    gbr    git branch
+    gco    git checkout
+    gswc   git switch --create
+    gsw    switch branch (fzf)
+    gswm   switch to main
+    gswap  swap w/ stash (fzf)
+    gdl    delete branch (fzf)
+    gpla   pull all repos in cwd
+  worktrees
+    gwl    git worktree list
+    gwp    git worktree prune
+    gwa    add worktree (fzf)
+    gws    cd to worktree (fzf)
+    gwd    rm worktree (fzf)
+EOF
+}
 alias ga='git add'
 alias gaa='git add .'
 alias gst='git status'

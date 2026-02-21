@@ -1,3 +1,19 @@
+t() {
+  if [[ $# -gt 0 ]]; then
+    tmux "$@"
+    return
+  fi
+  cat <<'EOF'
+tmux aliases:
+  sessions
+    tl  list-sessions
+    td  detach
+    tn  new session <name>
+    ts  switch session (fzf)
+    tk  kill session (fzf)
+EOF
+}
+
 # simple aliases
 alias tl='tmux list-sessions'
 alias td='tmux detach'
