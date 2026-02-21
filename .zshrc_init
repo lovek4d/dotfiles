@@ -7,6 +7,7 @@ autoload -Uz compinit && compinit
 
 # source others
 source $HOME/dev/dotfiles/.zshrc_git
+source $HOME/dev/dotfiles/.zshrc_tmux
 source $HOME/dev/dotfiles/.zshrc_funcs
 
 # general
