@@ -11,6 +11,19 @@ tmux aliases:
     tn  new session <name>
     ts  switch session (fzf)
     tk  kill session (fzf)
+
+  keybindings (ctrl+b …)
+    d      detach
+    c      new window
+    n / p  next / prev window
+    ,      rename window
+    w      window list
+    %      split vertical
+    "      split horizontal
+    arrow  switch pane
+    z      zoom pane
+    [      scroll / copy mode
+    x      kill pane
 EOF
 }
 
