@@ -1,0 +1,51 @@
+cgt() {
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    cat <<'EOF'
+cgt — create a worktree + tmux session + launch claude code
+
+usage: cgt [branch-name]
+
+  If branch-name is given, creates (or reuses) that branch.
+  If omitted, fzf-selects from existing branches.
+
+  Creates a git worktree, opens a tmux session named after
+  the branch, and starts claude code inside it.
+EOF
+    return 0
+  fi
+
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+
+  # resolve branch: argument or fzf select
+  local branch
+  if [[ -n "$1" ]]; then
+    branch="$1"
+  else
+    branch=$(git branch -a --format='%(refname:short)' \
+      | fzf --prompt='worktree branch> ' --height=40% --reverse)
+    [[ -z "$branch" ]] && return 1
+  fi
+
+  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
+  local target="$base_dir/$branch"
+
+  # create worktree: new branch from HEAD if doesn't exist, else use existing
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    git worktree add "$target" "$branch"
+  else
+    git worktree add -b "$branch" "$target"
+  fi
+  [[ $? -ne 0 ]] && return 1
+
+  # sanitize branch name for tmux session (replace / with -)
+  local session="${branch//\//-}"
+
+  # create tmux session and launch claude
+  if [[ -n "$TMUX" ]]; then
+    tmux new-session -ds "$session" -c "$target" "claude"
+    tmux switch-client -t "$session"
+  else
+    tmux new-session -s "$session" -c "$target" "claude"
+  fi
+}

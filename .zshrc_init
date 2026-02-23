@@ -9,6 +9,7 @@ autoload -Uz compinit && compinit
 source $HOME/dev/dotfiles/.zshrc_git
 source $HOME/dev/dotfiles/.zshrc_tmux
 source $HOME/dev/dotfiles/.zshrc_funcs
+source $HOME/dev/dotfiles/.zshrc_claude
 
 # general
 alias dev='cd ~/dev'
