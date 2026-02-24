@@ -21,6 +21,7 @@ zshrc aliases:
     wdvenv       source .venv/bin/activate
     docker_prune docker system prune -a --volumes
   dotfiles
+    zinit  install/upgrade all deps
     zpl    git pull dotfiles + source
   zshrc
     zvim   edit .zshrc
@@ -33,6 +34,35 @@ zshrc aliases:
     t      tmux aliases
     c      claude aliases
 EOF
+}
+
+# bootstrap
+zinit() {
+  # xcode command line tools
+  if ! xcode-select -p >/dev/null 2>&1; then
+    echo "=== xcode command line tools ==="
+    xcode-select --install
+    echo "re-run zinit after xcode tools finish installing"
+    return 0
+  fi
+
+  # homebrew
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "=== installing homebrew ==="
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+
+  echo "=== brew packages ==="
+  local pkgs=(git fzf tmux nvm python@3 claude-code colima docker)
+  brew install "${pkgs[@]}"
+  brew upgrade "${pkgs[@]}"
+
+  # nvm needs ~/.nvm dir
+  mkdir -p "$HOME/.nvm"
+
+  echo "=== done ==="
+  echo "note: run 'colima start' to start the docker runtime"
 }
 
 alias dev='cd ~/dev'
