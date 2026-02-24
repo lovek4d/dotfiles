@@ -12,6 +12,12 @@ tmux aliases:
     ts  switch session (fzf)
     tk  kill session (fzf)
 
+  panes
+    trpu  resize pane up    5
+    trpd  resize pane down  5
+    trpl  resize pane left  5
+    trpr  resize pane right 5
+
   keybindings (ctrl+b …)
     d      detach
     c      new window
@@ -24,12 +30,20 @@ tmux aliases:
     z      zoom pane
     [      scroll / copy mode
     x      kill pane
+    space  command palette
+
+  settings
+    set -g mouse on
 EOF
 }
 
 # simple aliases
 alias tl='tmux list-sessions'
 alias td='tmux detach'
+alias trpu='tmux resize-pane -U 5'
+alias trpd='tmux resize-pane -D 5'
+alias trpl='tmux resize-pane -L 5'
+alias trpr='tmux resize-pane -R 5'
 
 ## create named session (avoids nesting)
 tn() {
