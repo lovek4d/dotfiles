@@ -1,3 +1,30 @@
+c() {
+  if [[ $# -gt 0 ]]; then
+    claude "$@"
+    return
+  fi
+  cat <<'EOF'
+claude aliases:
+  core
+    cn     claude (new interactive session)
+    cq     claude --print (quick)
+    cr     claude --resume
+  quick + model
+    cqh    claude --print --model haiku
+    cqs    claude --print --model sonnet
+    cqo    claude --print --model opus
+  workflow
+    cgt    worktree + tmux + claude
+EOF
+}
+
+alias cn='claude'
+alias cq='claude --print'
+alias cr='claude --resume'
+alias cqh='claude --print --model haiku'
+alias cqs='claude --print --model sonnet'
+alias cqo='claude --print --model opus'
+
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     cat <<'EOF'
