@@ -15,6 +15,7 @@ claude aliases:
     cqo    claude --print --model opus
   workflow
     cgt    worktree + tmux + claude
+    cgtd   destroy worktree + tmux session
     cup    brew upgrade claude-code
 EOF
 }
@@ -39,6 +40,8 @@ usage: cgt [branch-name]
 
   Creates a git worktree, opens a tmux session named after
   the branch, and starts claude code inside it.
+
+  Use cgtd to tear down a worktree + tmux session.
 EOF
     return 0
   fi
@@ -77,4 +80,40 @@ EOF
   else
     tmux new-session -s "$session" -c "$target" "claude"
   fi
+}
+
+cgtd() {
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    cat <<'EOF'
+cgtd — destroy a worktree + tmux session
+
+usage: cgtd
+
+  fzf-selects from active worktrees (excluding the main one),
+  kills the associated tmux session, and removes the worktree.
+
+  The branch itself is left intact.
+
+  Inverse of cgt.
+EOF
+    return 0
+  fi
+
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+
+  local selection
+  selection=$(git worktree list | tail -n +2 \
+    | fzf --prompt='destroy worktree> ' --height=40% --reverse)
+  [[ -z "$selection" ]] && return 1
+
+  local wt_path branch session
+  wt_path=$(echo "$selection" | awk '{print $1}')
+  branch=$(echo "$selection" | awk '{print $3}' | tr -d '[]')
+  session="${branch//\//-}"
+
+  tmux kill-session -t "$session" 2>/dev/null
+  git worktree remove "$wt_path"
+
+  echo "destroyed worktree: $branch ($wt_path)"
 }
