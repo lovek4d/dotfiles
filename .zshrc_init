@@ -28,6 +28,10 @@ zshrc aliases:
     zup    zvim + zsrc
   misc
     redact-json  redact JSON from clipboard
+  help
+    g      git aliases
+    t      tmux aliases
+    c      claude aliases
 EOF
 }
 
