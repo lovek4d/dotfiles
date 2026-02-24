@@ -12,6 +12,25 @@ source $HOME/dev/dotfiles/.zshrc_funcs
 source $HOME/dev/dotfiles/.zshrc_claude
 
 # general
+z() {
+  cat <<'EOF'
+zshrc aliases:
+  general
+    dev          cd ~/dev
+    python       python3
+    wdvenv       source .venv/bin/activate
+    docker_prune docker system prune -a --volumes
+  dotfiles
+    zpl    git pull dotfiles + source
+  zshrc
+    zvim   edit .zshrc
+    zsrc   source .zshrc
+    zup    zvim + zsrc
+  misc
+    redact-json  redact JSON from clipboard
+EOF
+}
+
 alias dev='cd ~/dev'
 
 # python basics
