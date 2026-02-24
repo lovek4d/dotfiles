@@ -15,6 +15,7 @@ claude aliases:
     cqo    claude --print --model opus
   workflow
     cgt    worktree + tmux + claude
+    cup    brew upgrade claude-code
 EOF
 }
 
@@ -24,6 +25,7 @@ alias cr='claude --resume'
 alias cqh='claude --print --model haiku'
 alias cqs='claude --print --model sonnet'
 alias cqo='claude --print --model opus'
+alias cup='brew upgrade claude-code'
 
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then
