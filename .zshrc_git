@@ -46,14 +46,14 @@ git aliases:
   merging
     gm     git merge
     gms    merge --squash
-    gmn    merge --no-edit
+    gmn    merge --no-edit (fzf)
     gmo    merge -X ours
     gmt    merge -X theirs
     gmon   -X ours --no-edit
     gmtn   -X theirs --no-edit
     gcp    git cherry-pick
     grb    git rebase
-    gum    merge upstream main
+    gmm    merge upstream main
   resets
     grh    git reset --hard
     grs    git reset --soft
@@ -126,7 +126,19 @@ alias gcan='git commit --amend --no-edit'
 # merging
 alias gm='git merge'
 alias gms='git merge --squash'
-alias gmn='git merge --no-edit'
+## merge --no-edit (inline or fzf select)
+gmn() {
+  if [[ -n "$1" ]]; then
+    git merge --no-edit "$@"
+  else
+    local branch
+    branch=$(git branch --all --format='%(refname:short)' \
+      | sed 's#^remotes/##' \
+      | sort -u \
+      | fzf --prompt='merge> ' --height=40% --reverse)
+    [[ -n "$branch" ]] && git merge --no-edit "$branch"
+  fi
+}
 alias gmo='git merge -X ours'
 alias gmt='git merge -X theirs'
 alias gmon='git merge -X ours --no-edit'
@@ -135,7 +147,7 @@ alias gcp='git cherry-pick'
 alias grb='git rebase'
 
 ## merge upstream (auto-detect main/master)
-gum() {
+gmm() {
   local base="$(__git_default_branch)"
   git fetch origin "$base" && git merge "origin/$base" --no-edit
 }
@@ -242,10 +254,15 @@ gwd() {
 }
 
 # completions
-_gsw() {
-  words=(git switch "${(@)words[2,-1]}")
+__git_complete_as() {
+  words=(git $1 "${(@)words[2,-1]}")
   (( CURRENT += 1 ))
   local service=git
   _git
 }
+
+_gsw() { __git_complete_as switch }
+_gmn() { __git_complete_as merge  }
+
 compdef _gsw gsw
+compdef _gmn gmn
