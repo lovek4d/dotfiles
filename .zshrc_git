@@ -242,4 +242,10 @@ gwd() {
 }
 
 # completions
-compdef _git gsw=git-switch
+_gsw() {
+  words=(git switch "${(@)words[2,-1]}")
+  (( CURRENT += 1 ))
+  local service=git
+  _git
+}
+compdef _gsw gsw
