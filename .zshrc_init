@@ -17,22 +17,22 @@ z() {
 zshrc aliases:
   general
     dev          cd ~/dev
+    docker_prune docker system prune -a --volumes
     python       python3
     wdvenv       source .venv/bin/activate
-    docker_prune docker system prune -a --volumes
   dotfiles
     zinit  install/upgrade all deps
     zpl    git pull dotfiles + source
   zshrc
-    zvim   edit .zshrc
     zsrc   source .zshrc
     zup    zvim + zsrc
+    zvim   edit .zshrc
   misc
     redact-json  redact JSON from clipboard
   help
+    c      claude aliases
     g      git aliases
     t      tmux aliases
-    c      claude aliases
 EOF
 }
 

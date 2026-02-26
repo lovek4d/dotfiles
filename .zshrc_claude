@@ -11,8 +11,8 @@ claude aliases:
     cr     claude --resume
   quick + model
     cqh    claude --print --model haiku
-    cqs    claude --print --model sonnet
     cqo    claude --print --model opus
+    cqs    claude --print --model sonnet
   workflow
     cgt    worktree + tmux + claude
     cgtd   destroy worktree + tmux session

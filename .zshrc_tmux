@@ -6,31 +6,31 @@ t() {
   cat <<'EOF'
 tmux aliases:
   sessions
-    tl  list-sessions
     td  detach
+    tk  kill session (fzf)
+    tl  list-sessions
     tn  new session <name>
     ts  switch session (fzf)
-    tk  kill session (fzf)
 
   panes
-    trpu  resize pane up    5
     trpd  resize pane down  5
     trpl  resize pane left  5
     trpr  resize pane right 5
+    trpu  resize pane up    5
 
   keybindings (ctrl+b …)
-    d      detach
-    c      new window
-    n / p  next / prev window
-    ,      rename window
-    w      window list
-    %      split vertical
     "      split horizontal
-    arrow  switch pane
-    z      zoom pane
+    %      split vertical
+    ,      rename window
     [      scroll / copy mode
-    x      kill pane
+    arrow  switch pane
+    c      new window
+    d      detach
+    n / p  next / prev window
     space  command palette
+    w      window list
+    x      kill pane
+    z      zoom pane
 
   settings
     set -g mouse on

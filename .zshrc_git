@@ -17,62 +17,62 @@ git aliases:
   core
     ga     git add
     gaa    git add .
-    gst    git status
+    gfal   git fetch --all --prune
     gpl    git pull --ff-only
     gps    git push
-    gfal   git fetch --all --prune
+    gst    git status
   log
     gl     git log
-    glo    git log --oneline
-    glg    git log --graph
-    glp    git log -p <n>
-    glfs   git log -S <str>
     glff   git log --all-match <file>
+    glfs   git log -S <str>
+    glg    git log --graph
+    glo    git log --oneline
+    glp    git log -p <n>
   stash
     gs     git stash
-    gsp    git stash pop
-    gsd    git stash drop
-    gsm    git stash -m
-    gsl    git stash list
     gsa    git stash apply
-    gss    git stash show -p
-    gspf   stash pop (fzf)
+    gsd    git stash drop
     gsdf   stash drop (fzf)
+    gsl    git stash list
+    gsm    git stash -m
+    gsp    git stash pop
+    gspf   stash pop (fzf)
+    gss    git stash show -p
   commits
     gc     git commit
-    gcm    git commit -m
     gca    git commit --amend
     gcan   amend --no-edit
+    gcm    git commit -m
   merging
+    gcp    git cherry-pick
     gm     git merge
-    gms    merge --squash
+    gmm    merge upstream main
     gmn    merge --no-edit (fzf)
     gmo    merge -X ours
-    gmt    merge -X theirs
     gmon   -X ours --no-edit
+    gms    merge --squash
+    gmt    merge -X theirs
     gmtn   -X theirs --no-edit
-    gcp    git cherry-pick
     grb    git rebase
-    gmm    merge upstream main
   resets
+    gdc    copy diff to clipboard
     grh    git reset --hard
     grs    git reset --soft
-    gdc    copy diff to clipboard
   branches
     gbr    git branch
     gco    git checkout
-    gswc   git switch --create
-    gsw    switch branch (fzf)
-    gswm   switch to main
-    gswap  swap w/ stash (fzf)
     gdl    delete branch (fzf)
     gpla   pull all repos in cwd
+    gsw    switch branch (fzf)
+    gswap  swap w/ stash (fzf)
+    gswc   git switch --create
+    gswm   switch to main
   worktrees
+    gwa    add worktree (fzf)
+    gwd    rm worktree (fzf)
     gwl    git worktree list
     gwp    git worktree prune
-    gwa    add worktree (fzf)
     gws    cd to worktree (fzf)
-    gwd    rm worktree (fzf)
 EOF
 }
 alias ga='git add'
