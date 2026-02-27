@@ -27,6 +27,7 @@ tmux aliases:
     arrow  switch pane
     c      new window
     ctrl+q claude queue popup
+    ctrl+w dismiss session from queue
     d      detach
     n / p  next / prev window
     space  command palette
@@ -35,7 +36,8 @@ tmux aliases:
     z      zoom pane
 
   status bar
-    Q:N    claude sessions waiting (auto-hidden when 0)
+    P:N    claude prompts waiting (auto-hidden when 0)
+    D:N    claude done sessions   (auto-hidden when 0)
 
   settings
     set -g mouse on
@@ -108,16 +110,22 @@ tb() {
   echo "running in '$name'"
 }
 
-## claude queue: keybinding + status bar
+## claude queue: keybindings + status bar
 if [[ -n "$TMUX" ]]; then
-  # ctrl+b ctrl+q → popup with waiting sessions
+  # ctrl+b ctrl+q → popup with waiting sessions (tagged, prompts first)
   tmux bind-key C-q popup -E -w 60 -h 15 \
-    'for f in ~/.claude/queue/*; do [ -f "$f" ] && s="${f##*/}" && tmux has-session -t "$s" 2>/dev/null && echo "$s"; done | fzf --prompt="queue> " --reverse | xargs -I{} tmux switch-client -t {}'
+    'D=~/.claude/queue; p=""; d=""; for f in "$D"/*; do [ -f "$f" ] || continue; s="${f##*/}"; tmux has-session -t "$s" 2>/dev/null || continue; read t < "$f"; if [ "$t" = "prompt" ]; then p="$p[prompt] $s
+"; else d="$d[done]   $s
+"; fi; done; printf "%s%s" "$p" "$d" | fzf --prompt="queue> " --reverse | sed "s/^\[[a-z]*\] *//" | xargs -I{} tmux switch-client -t {}'
 
-  # status bar: show Q:N when queue is non-empty
+  # ctrl+b ctrl+w → dismiss current session from queue
+  tmux bind-key C-w run-shell \
+    'S=$(tmux display-message -p "#{session_name}"); rm -f "$HOME/.claude/queue/$S" && tmux display-message "dismissed: $S"'
+
+  # status bar: show P:N D:N (only non-zero)
   tmux set-option -g status-interval 2
   tmux set-option -g status-right \
-    '#(D=$HOME/.claude/queue; n=0; for f in "$D"/*; do [ -f "$f" ] && s="${f##*/}" && tmux has-session -t "$s" 2>/dev/null && n=$((n+1)); done; [ "$n" -gt 0 ] && echo "Q:$n ") %H:%M'
+    '#(D=$HOME/.claude/queue; p=0; d=0; for f in "$D"/*; do [ -f "$f" ] || continue; s="${f##*/}"; tmux has-session -t "$s" 2>/dev/null || continue; read t < "$f"; [ "$t" = prompt ] && p=$((p+1)) || d=$((d+1)); done; [ $p -gt 0 ] && printf "P:%d " $p; [ $d -gt 0 ] && printf "D:%d " $d) %H:%M'
 fi
 
 ## kill session (inline or fzf select)
