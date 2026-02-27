@@ -26,12 +26,16 @@ tmux aliases:
     [      scroll / copy mode
     arrow  switch pane
     c      new window
+    ctrl+q claude queue popup
     d      detach
     n / p  next / prev window
     space  command palette
     w      window list
     x      kill pane
     z      zoom pane
+
+  status bar
+    Q:N    claude sessions waiting (auto-hidden when 0)
 
   settings
     set -g mouse on
@@ -103,6 +107,18 @@ tb() {
     send-keys -t "$name" "$*; _tb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
   echo "running in '$name'"
 }
+
+## claude queue: keybinding + status bar
+if [[ -n "$TMUX" ]]; then
+  # ctrl+b ctrl+q → popup with waiting sessions
+  tmux bind-key C-q popup -E -w 60 -h 15 \
+    'for f in ~/.claude/queue/*; do [ -f "$f" ] && s="${f##*/}" && tmux has-session -t "$s" 2>/dev/null && echo "$s"; done | fzf --prompt="queue> " --reverse | xargs -I{} tmux switch-client -t {}'
+
+  # status bar: show Q:N when queue is non-empty
+  tmux set-option -g status-interval 2
+  tmux set-option -g status-right \
+    '#(D=$HOME/.claude/queue; n=0; for f in "$D"/*; do [ -f "$f" ] && s="${f##*/}" && tmux has-session -t "$s" 2>/dev/null && n=$((n+1)); done; [ "$n" -gt 0 ] && echo "Q:$n ") %H:%M'
+fi
 
 ## kill session (inline or fzf select)
 tk() {

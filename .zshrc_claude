@@ -17,6 +17,11 @@ claude aliases:
     cgt    worktree + tmux + claude
     cgtd   destroy worktree + tmux session
     cup    brew upgrade claude-code
+  queue
+    cinit  setup ~/.claude/settings.json
+    cw     waiting sessions (fzf jump)
+    cwc    clear stale queue entries
+    cwf    auto-focus mode (cycles waiting sessions)
 EOF
 }
 
@@ -119,4 +124,120 @@ EOF
   git worktree remove "$wt_path"
 
   echo "destroyed worktree: $branch ($wt_path)"
+}
+
+cinit() {
+  mkdir -p ~/.claude/queue
+  python3 -c '
+import json, os
+path = os.path.expanduser("~/.claude/settings.json")
+settings = {}
+if os.path.exists(path):
+    with open(path) as f:
+        settings = json.load(f)
+
+enqueue = (
+    "bash -c '\''D=$HOME/.claude/queue; mkdir -p \"$D\"; "
+    "S=$(tmux display-message -p \"#{session_name}\" 2>/dev/null) || exit 0; "
+    "[ -f \"$D/$S\" ] && exit 0; touch \"$D/$S\"; "
+    "printf \"\\a\"; tmux display-message \"Claude waiting: $S\" 2>/dev/null; exit 0'\''"
+)
+dequeue = (
+    "bash -c '\''S=$(tmux display-message -p \"#{session_name}\" 2>/dev/null) || exit 0; "
+    "rm -f \"$HOME/.claude/queue/$S\"; exit 0'\''"
+)
+
+settings["hooks"] = {
+    "Notification": [{"matcher": "idle_prompt|permission_prompt",
+        "hooks": [{"type": "command", "command": enqueue, "timeout": 5}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": enqueue, "timeout": 5}]}],
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": dequeue, "timeout": 5}]}],
+    "SessionEnd": [{"hooks": [{"type": "command", "command": dequeue, "timeout": 5}]}],
+}
+
+with open(path, "w") as f:
+    json.dump(settings, f, indent=2)
+  '
+  echo "claude settings.json updated with queue hooks"
+}
+
+cw() {
+  local queue_dir="$HOME/.claude/queue"
+  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
+
+  # prune stale entries
+  local waiting=()
+  for f in "$queue_dir"/*(.N); do
+    local session="${f:t}"
+    if tmux has-session -t "$session" 2>/dev/null; then
+      waiting+=("$session")
+    else
+      rm -f "$f"
+    fi
+  done
+
+  if [[ ${#waiting[@]} -eq 0 ]]; then
+    echo "no sessions waiting"
+    return 0
+  fi
+
+  echo "${#waiting[@]} session(s) waiting"
+
+  if [[ -n "$TMUX" ]]; then
+    local choice
+    choice=$(printf '%s\n' "${waiting[@]}" \
+      | fzf --prompt='jump to> ' --height=40% --reverse)
+    [[ -n "$choice" ]] && tmux switch-client -t "$choice"
+  else
+    printf '  %s\n' "${waiting[@]}"
+  fi
+}
+
+cwc() {
+  local queue_dir="$HOME/.claude/queue"
+  [[ ! -d "$queue_dir" ]] && return 0
+
+  local count=0
+  for f in "$queue_dir"/*(.N); do
+    local session="${f:t}"
+    if ! tmux has-session -t "$session" 2>/dev/null; then
+      rm -f "$f"
+      ((count++))
+    fi
+  done
+  echo "cleared $count stale queue entry(s)"
+}
+
+cwf() {
+  local queue_dir="$HOME/.claude/queue"
+  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
+  [[ -z "$TMUX" ]] && echo "cwf must be run inside a tmux session" && return 1
+
+  echo "auto-focus mode (ctrl-c to stop)"
+  while true; do
+    # find next waiting session
+    local next=""
+    for f in "$queue_dir"/*(.N); do
+      local session="${f:t}"
+      if tmux has-session -t "$session" 2>/dev/null; then
+        next="$session"
+        break
+      else
+        rm -f "$f"
+      fi
+    done
+
+    if [[ -z "$next" ]]; then
+      sleep 2
+      continue
+    fi
+
+    tmux switch-client -t "$next"
+    echo "switched to: $next"
+
+    # wait until this session's queue file disappears (user answered)
+    while [[ -f "$queue_dir/$next" ]]; do
+      sleep 1
+    done
+  done
 }
