@@ -54,8 +54,13 @@ git aliases:
     gmt    merge -X theirs
     gmtn   -X theirs --no-edit
     grb    git rebase
+  diff
+    gd     git diff
+    gdc    git diff HEAD~1
+    gdcp   copy diff to clipboard
+    gdb    diff branch (fzf)
+    gdm    git diff main
   resets
-    gdc    copy diff to clipboard
     grh    git reset --hard
     grs    git reset --soft
   branches
@@ -153,12 +158,31 @@ gmm() {
   git fetch origin "$base" && git merge "origin/$base" --no-edit
 }
 
+# diff
+alias gd='git diff'
+alias gdc='git diff HEAD~1'
+alias gdcp='git diff | pbcopy && echo "Copied diff to clipboard"'
+
+## diff branch (inline or fzf select)
+gdb() {
+  if [[ -n "$1" ]]; then
+    git diff "$@"
+  else
+    local branch
+    branch=$(git branch --all --format='%(refname:short)' \
+      | sed 's#^remotes/##' \
+      | sort -u \
+      | fzf --prompt='diff branch> ' --height=40% --reverse)
+    [[ -n "$branch" ]] && git diff "$branch"
+  fi
+}
+
+## diff main/master (autodetect)
+gdm() { git diff "$(__git_default_branch)"; }
+
 # resets
 alias grh='git reset --hard'
 alias grs='git reset --soft'
-
-# copy diff (mac-centric)
-alias gdc='git diff | pbcopy && echo "Copied diff to clipboard"'
 
 # branches
 alias gbr='git branch'
@@ -278,8 +302,10 @@ __git_complete_as() {
 
 _gsw()  { __git_complete_as switch }
 _gswd() { __git_complete_as switch }
+_gdb()  { __git_complete_as diff   }
 _gmn()  { __git_complete_as merge  }
 
 compdef _gsw  gsw
 compdef _gswd gswd
+compdef _gdb  gdb
 compdef _gmn  gmn
