@@ -66,6 +66,7 @@ git aliases:
     gsw    switch branch (fzf)
     gswap  swap w/ stash (fzf)
     gswc   git switch --create
+    gswd   switch branch detached (fzf)
     gswm   switch to main
   worktrees
     gwa    add worktree (fzf)
@@ -178,6 +179,20 @@ gsw() {
   fi
 }
 
+## switch branch detached (inline or fzf select)
+gswd() {
+  if [[ -n "$1" ]]; then
+    git switch -d "$1"
+  else
+    local branch
+    branch=$(git branch --all --format='%(refname:short)' \
+      | sed 's#^remotes/##' \
+      | sort -u \
+      | fzf --prompt='detach> ' --height=40% --reverse)
+    [[ -n "$branch" ]] && git switch -d "$branch"
+  fi
+}
+
 ## switch to main/master (autodetect)
 gswm() {
   git switch "$(__git_default_branch)"
@@ -261,8 +276,10 @@ __git_complete_as() {
   _git
 }
 
-_gsw() { __git_complete_as switch }
-_gmn() { __git_complete_as merge  }
+_gsw()  { __git_complete_as switch }
+_gswd() { __git_complete_as switch }
+_gmn()  { __git_complete_as merge  }
 
-compdef _gsw gsw
-compdef _gmn gmn
+compdef _gsw  gsw
+compdef _gswd gswd
+compdef _gmn  gmn
