@@ -6,6 +6,7 @@ t() {
   cat <<'EOF'
 tmux aliases:
   sessions
+    tb  background command, notify on done
     td  detach
     tk  kill session (fzf)
     tl  list-sessions
@@ -76,6 +77,31 @@ ts() {
       tmux attach -t "$session"
     fi
   fi
+}
+
+## background command with notification on completion
+_tb_notify() {
+  local rc=$1 cmd=$2 session=$3
+  local tag="DONE" sound="Glass"
+  [[ $rc -ne 0 ]] && tag="FAILED" && sound="Basso"
+  tmux rename-session -t "$session" "${session}_${tag}" 2>/dev/null
+  osascript -e "display notification \"$tag\" with title \"$cmd\" sound name \"$sound\""
+  clear
+  echo "[tb] $tag (exit $rc): $cmd"
+  echo "press any key to close"
+  read -k1
+  exit
+}
+
+tb() {
+  [[ -z "$1" ]] && echo "usage: tb <command...>" && return 1
+  local name="bg-$(echo "$*" | awk '{for(i=1;i<=3&&i<=NF;i++) printf (i>1?"_":"") $i}')"
+  if tmux has-session -t "$name" 2>/dev/null; then
+    echo "already running $name" && return 1
+  fi
+  tmux new-session -ds "$name" \; \
+    send-keys -t "$name" "$*; _tb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
+  echo "running in '$name'"
 }
 
 ## kill session (inline or fzf select)
