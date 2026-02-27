@@ -20,8 +20,8 @@ claude aliases:
   queue
     cinit  setup ~/.claude/settings.json
     cw     waiting sessions (fzf jump, priority sorted)
-    cwd    dismiss current session from queue
-    cwf    auto-focus mode (polls queue, prompts first)
+    cwd    demote current session (→ paused)
+    cwf    auto-focus mode (polls queue, priority cascade)
 EOF
 }
 
@@ -139,23 +139,24 @@ if os.path.exists(path):
 
 Q = 'D=$HOME/.claude/queue; mkdir -p "$D"; S=$(tmux display-message -p "#{session_name}" 2>/dev/null) || exit 0'
 
-def enqueue(typ):
-    return f"bash -c '{Q}; echo {typ} > \"$D/$S\"; printf \"\\a\"; tmux display-message \"Claude {typ}: $S\" 2>/dev/null'"
+def enqueue(typ, notify=True):
+    bell = 'printf "\\a"; tmux display-message "Claude %s: $S" 2>/dev/null' % typ if notify else ':'
+    return f"bash -c '{Q}; echo {typ} > \"$D/$S\"; {bell}'"
 
-dequeue        = f"bash -c '{Q}; rm -f \"$D/$S\"'"
-dequeue_prompt = f"bash -c '{Q}; f=\"$D/$S\"; [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ] && rm -f \"$f\"'"
+dequeue = f"bash -c '{Q}; rm -f \"$D/$S\"'"
+to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ] && echo thinking > \"$f\"'"
 
 settings["hooks"] = {
     "Notification": [
         {"matcher": "permission_prompt|elicitation_dialog",
          "hooks": [{"type": "command", "command": enqueue("prompt"), "timeout": 5}]},
         {"matcher": "idle_prompt",
-         "hooks": [{"type": "command", "command": enqueue("done"), "timeout": 5}]},
+         "hooks": [{"type": "command", "command": enqueue("idle"), "timeout": 5}]},
     ],
-    "Stop":            [{"hooks": [{"type": "command", "command": enqueue("done"),  "timeout": 5}]}],
-    "PostToolUse":     [{"hooks": [{"type": "command", "command": dequeue_prompt,   "timeout": 5}]}],
-    "UserPromptSubmit":[{"hooks": [{"type": "command", "command": dequeue,          "timeout": 5}]}],
-    "SessionEnd":      [{"hooks": [{"type": "command", "command": dequeue,          "timeout": 5}]}],
+    "Stop":            [{"hooks": [{"type": "command", "command": enqueue("idle"),             "timeout": 5}]}],
+    "PostToolUse":     [{"hooks": [{"type": "command", "command": to_thinking,                 "timeout": 5}]}],
+    "UserPromptSubmit":[{"hooks": [{"type": "command", "command": enqueue("thinking", False),  "timeout": 5}]}],
+    "SessionEnd":      [{"hooks": [{"type": "command", "command": dequeue,                     "timeout": 5}]}],
 }
 
 with open(path, "w") as f:
@@ -168,17 +169,22 @@ cw() {
   local queue_dir="$HOME/.claude/queue"
   [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
 
-  local prompts=() dones=()
+  local prompts=() idles=() thinkings=() pauseds=()
   for f in "$queue_dir"/*(.N); do
     local session="${f:t}" typ=""
     if ! tmux has-session -t "$session" 2>/dev/null; then
       rm -f "$f"; continue
     fi
     read -r typ < "$f" 2>/dev/null
-    [[ "$typ" == "prompt" ]] && prompts+=("$session") || dones+=("$session")
+    case "$typ" in
+      prompt)   prompts+=("$session") ;;
+      thinking) thinkings+=("$session") ;;
+      paused)   pauseds+=("$session") ;;
+      *)        idles+=("$session") ;;  # idle, done, unknown → idle
+    esac
   done
 
-  local total=$(( ${#prompts[@]} + ${#dones[@]} ))
+  local total=$(( ${#prompts[@]} + ${#idles[@]} + ${#thinkings[@]} + ${#pauseds[@]} ))
   if [[ $total -eq 0 ]]; then
     echo "no sessions waiting"
     return 0
@@ -186,8 +192,10 @@ cw() {
 
   echo "$total session(s) waiting"
   local entries=()
-  for s in "${prompts[@]}"; do entries+=("[prompt] $s"); done
-  for s in "${dones[@]}";   do entries+=("[done]   $s"); done
+  for s in "${prompts[@]}";  do entries+=("[prompt]   $s"); done
+  for s in "${idles[@]}";    do entries+=("[idle]     $s"); done
+  for s in "${thinkings[@]}"; do entries+=("[thinking] $s"); done
+  for s in "${pauseds[@]}";  do entries+=("[paused]   $s"); done
 
   if [[ -n "$TMUX" ]]; then
     local choice
@@ -209,20 +217,21 @@ cwf() {
   local showing=""
   echo "auto-focus mode (ctrl-c to stop)"
   while true; do
-    local best="" first_done=""
+    local best="" first_idle="" first_thinking="" first_paused=""
     for f in "$queue_dir"/*(.N); do
       local session="${f:t}" typ=""
       if ! tmux has-session -t "$session" 2>/dev/null; then
         rm -f "$f"; continue
       fi
       read -r typ < "$f" 2>/dev/null
-      if [[ "$typ" == "prompt" ]]; then
-        best="$session"; break
-      elif [[ -z "$first_done" ]]; then
-        first_done="$session"
-      fi
+      case "$typ" in
+        prompt)   best="$session"; break ;;
+        thinking) [[ -z "$first_thinking" ]] && first_thinking="$session" ;;
+        paused)   [[ -z "$first_paused" ]]   && first_paused="$session" ;;
+        *)        [[ -z "$first_idle" ]]      && first_idle="$session" ;;  # idle, done, unknown
+      esac
     done
-    [[ -z "$best" ]] && best="$first_done"
+    [[ -z "$best" ]] && best="${first_idle:-${first_thinking:-$first_paused}}"
 
     if [[ -n "$best" && "$best" != "$showing" ]]; then
       tmux switch-client -c "$cwf_tty" -t "$best"
@@ -242,8 +251,14 @@ cwd() {
   session=$(tmux display-message -p '#{session_name}')
   local f="$HOME/.claude/queue/$session"
   if [[ -f "$f" ]]; then
-    rm -f "$f"
-    echo "dismissed: $session"
+    local typ=""
+    read -r typ < "$f" 2>/dev/null
+    if [[ "$typ" == "paused" ]]; then
+      echo "already paused: $session"
+    else
+      echo paused > "$f"
+      echo "paused: $session (was $typ)"
+    fi
   else
     echo "not in queue: $session"
   fi
