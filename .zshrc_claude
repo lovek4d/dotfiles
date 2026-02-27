@@ -41,7 +41,8 @@ usage: cgt [branch-name]
   Creates a git worktree, opens a tmux session named after
   the branch, and starts claude code inside it.
 
-  Use cgtd to tear down a worktree + tmux session.
+  On exit, the worktree is automatically removed (unless dirty).
+  Use cgtd to manually tear down a worktree + tmux session.
 EOF
     return 0
   fi
@@ -73,12 +74,14 @@ EOF
   # sanitize branch name for tmux session (replace / with -)
   local session="${branch//\//-}"
 
-  # create tmux session and launch claude
+  # create tmux session: launch claude, then auto-remove worktree on exit
+  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+
   if [[ -n "$TMUX" ]]; then
-    tmux new-session -ds "$session" -c "$target" "claude"
+    tmux new-session -ds "$session" -c "$target" "$cmd"
     tmux switch-client -t "$session"
   else
-    tmux new-session -s "$session" -c "$target" "claude"
+    tmux new-session -s "$session" -c "$target" "$cmd"
   fi
 }
 
