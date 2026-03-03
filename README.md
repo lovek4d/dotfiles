@@ -1,5 +1,4 @@
-Clone into `$HOME/dev/` and source init in .zshrc:
-
 ```
-source $HOME/dev/dotfiles/zshrc/init.zsh
+git clone https://github.com/lovek4d/dotfiles.git ~/dev/dotfiles
+echo 'source $HOME/dev/dotfiles/zshrc/init.zsh' >> ~/.zshrc
 ```
