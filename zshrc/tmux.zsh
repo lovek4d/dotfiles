@@ -45,6 +45,13 @@ tmux aliases:
 EOF
 }
 
+## symlink ~/.tmux.conf → repo config
+tinit() {
+  ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
+  echo "linked ~/.tmux.conf → ~/dev/dotfiles/configs/tmux.conf"
+  [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
+}
+
 # simple aliases
 alias tl='tmux list-sessions'
 alias td='tmux detach'
@@ -111,11 +118,17 @@ tb() {
   echo "running in '$name'"
 }
 
-## symlink ~/.tmux.conf → repo config
-tinit() {
-  ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
-  echo "linked ~/.tmux.conf → ~/dev/dotfiles/configs/tmux.conf"
-  [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
+## kill session (inline or fzf select)
+tk() {
+  if [[ -n "$1" ]]; then
+    tmux kill-session -t "$1"
+  else
+    local session
+    session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
+      | fzf --prompt='kill session> ' --height=40% --reverse)
+    [[ -z "$session" ]] && return 1
+    tmux kill-session -t "$session"
+  fi
 }
 
 ## claude queue: keybindings + status bar
@@ -137,16 +150,3 @@ if [[ -n "$TMUX" ]]; then
   tmux set-option -g status-right \
     '#(D=$HOME/.claude/queue; p=0; i=0; t=0; s=0; for f in "$D"/*; do [ -f "$f" ] || continue; n="${f##*/}"; tmux has-session -t "$n" 2>/dev/null || continue; read x < "$f"; case "$x" in prompt) p=$((p+1));; thinking) t=$((t+1));; paused) s=$((s+1));; *) i=$((i+1));; esac; done; [ $p -gt 0 ] && printf "P:%d " $p; [ $i -gt 0 ] && printf "I:%d " $i; [ $t -gt 0 ] && printf "T:%d " $t; [ $s -gt 0 ] && printf "S:%d " $s) %H:%M'
 fi
-
-## kill session (inline or fzf select)
-tk() {
-  if [[ -n "$1" ]]; then
-    tmux kill-session -t "$1"
-  else
-    local session
-    session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
-      | fzf --prompt='kill session> ' --height=40% --reverse)
-    [[ -z "$session" ]] && return 1
-    tmux kill-session -t "$session"
-  fi
-}

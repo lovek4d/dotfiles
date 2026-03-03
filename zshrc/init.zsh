@@ -63,6 +63,12 @@ zinit() {
   # nvm needs ~/.nvm dir
   mkdir -p "$HOME/.nvm"
 
+  echo "=== tmux ==="
+  tinit
+
+  echo "=== claude ==="
+  cinit
+
   echo "=== done ==="
   echo "note: run 'colima start' to start the docker runtime"
 }
