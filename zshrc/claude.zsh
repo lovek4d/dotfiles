@@ -16,7 +16,7 @@ claude aliases:
   workflow
     cgt    worktree + tmux + claude
     cgtd   destroy worktree + tmux session
-    cup    brew upgrade claude-code
+    cup    upgrade claude-code
   queue
     cinit  setup ~/.claude/settings.json
     cw     waiting sessions (fzf jump, priority sorted)
@@ -70,7 +70,11 @@ alias cr='claude --resume'
 alias cqh='claude --print --model haiku'
 alias cqs='claude --print --model sonnet'
 alias cqo='claude --print --model opus'
-alias cup='brew upgrade claude-code'
+if __is_macos; then
+  alias cup='brew upgrade claude-code'
+else
+  alias cup='npm update -g @anthropic-ai/claude-code'
+fi
 
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then

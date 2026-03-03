@@ -161,7 +161,7 @@ gmm() {
 # diff
 alias gd='git diff'
 alias gdc='git diff HEAD~1'
-alias gdcp='git diff | pbcopy && echo "Copied diff to clipboard"'
+alias gdcp='git diff | clipcopy && echo "Copied diff to clipboard"'
 
 ## diff branch (inline or fzf select)
 gdb() {

@@ -1,9 +1,9 @@
 # redact jsons quickly from clipboard
 redact-json() {
-    export CLIP=$(pbpaste)
+    export CLIP=$(clippaste)
     [[ -z "$CLIP" ]] && echo "Clipboard empty" && return 1
     
-    python3 << 'EOF' | pbcopy && echo "Redacted JSON copied to clipboard"
+    python3 << 'EOF' | clipcopy && echo "Redacted JSON copied to clipboard"
 import os
 import json
 import re

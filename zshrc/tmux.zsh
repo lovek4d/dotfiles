@@ -99,7 +99,7 @@ _tb_notify() {
   local tag="DONE" sound="Glass"
   [[ $rc -ne 0 ]] && tag="FAILED" && sound="Basso"
   tmux rename-session -t "$session" "${session}_${tag}" 2>/dev/null
-  osascript -e "display notification \"$tag\" with title \"$cmd\" sound name \"$sound\""
+  __notify "$tag" "$cmd" "$sound"
   clear
   echo "[tb] $tag (exit $rc): $cmd"
   echo "press any key to close"

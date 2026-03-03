@@ -1,6 +1,12 @@
+# platform detection (must be first)
+source $HOME/dev/dotfiles/zshrc/platform.zsh
+
 # autocomplete (must be before sourcing files that use compdef)
 if command -v brew >/dev/null 2>&1; then
   FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+fi
+if [[ -d /usr/share/zsh/vendor-completions ]]; then
+  FPATH="/usr/share/zsh/vendor-completions:${FPATH}"
 fi
 autoload -Uz promptinit && promptinit
 autoload -Uz compinit && compinit
@@ -40,6 +46,28 @@ EOF
 
 # bootstrap
 zinit() {
+  local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting)
+
+  if __is_macos; then
+    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker
+  elif __is_linux; then
+    _zinit_linux "${pkgs[@]}" xclip docker.io
+  else
+    echo "unsupported platform: $OSTYPE" && return 1
+  fi
+
+  mkdir -p "$HOME/.nvm"
+
+  echo "=== tmux ==="
+  tinit
+
+  echo "=== claude ==="
+  cinit
+
+  echo "=== done ==="
+}
+
+_zinit_macos() {
   # xcode command line tools
   if ! xcode-select -p >/dev/null 2>&1; then
     echo "=== xcode command line tools ==="
@@ -56,21 +84,26 @@ zinit() {
   fi
 
   echo "=== brew packages ==="
-  local pkgs=(git fzf tmux nvm python@3 claude-code colima docker)
-  brew install "${pkgs[@]}"
-  brew upgrade "${pkgs[@]}"
-
-  # nvm needs ~/.nvm dir
-  mkdir -p "$HOME/.nvm"
-
-  echo "=== tmux ==="
-  tinit
-
-  echo "=== claude ==="
-  cinit
-
-  echo "=== done ==="
+  brew install "$@"
   echo "note: run 'colima start' to start the docker runtime"
+}
+
+_zinit_linux() {
+  echo "=== apt packages ==="
+  sudo apt update
+  sudo apt install -y "$@"
+
+  # nvm via install script
+  if [[ ! -d "$HOME/.nvm" ]]; then
+    echo "=== installing nvm ==="
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  fi
+
+  # claude-code via npm
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "=== installing claude-code ==="
+    npm install -g @anthropic-ai/claude-code
+  fi
 }
 
 alias dev='cd ~/dev'
@@ -81,8 +114,15 @@ alias wdvenv='source .venv/bin/activate'
 
 # nvm + autocomplete
 export NVM_DIR="$HOME/.nvm"
-[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+if __is_macos && command -v brew >/dev/null 2>&1; then
+  _brew_prefix="$(brew --prefix)"
+  [ -s "$_brew_prefix/opt/nvm/nvm.sh" ] && \. "$_brew_prefix/opt/nvm/nvm.sh"
+  [ -s "$_brew_prefix/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$_brew_prefix/opt/nvm/etc/bash_completion.d/nvm"
+  unset _brew_prefix
+else
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+fi
 
 # dotfiles
 alias zpl='git -C ~/dev/dotfiles pull && source ~/.zshrc'
@@ -96,4 +136,19 @@ alias zup='zvim && zsrc'
 alias docker_prune='docker system prune -a --volumes'
 
 # brew shell init
-eval "$(/opt/homebrew/bin/brew shellenv)"
+if __is_macos; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+
+# zsh plugins (syntax-highlighting must be last)
+if __is_macos && command -v brew >/dev/null 2>&1; then
+  _bp="$(brew --prefix)"
+  [ -s "$_bp/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_bp/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  [ -s "$_bp/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_bp/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+  unset _bp
+else
+  [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
