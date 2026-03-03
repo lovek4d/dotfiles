@@ -113,8 +113,8 @@ tb() {
 
 ## symlink ~/.tmux.conf → repo config
 tinit() {
-  ln -sf ~/dev/dotfiles/tmux.conf ~/.tmux.conf
-  echo "linked ~/.tmux.conf → ~/dev/dotfiles/tmux.conf"
+  ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
+  echo "linked ~/.tmux.conf → ~/dev/dotfiles/configs/tmux.conf"
   [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
 }
 

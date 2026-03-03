@@ -6,11 +6,11 @@ autoload -Uz promptinit && promptinit
 autoload -Uz compinit && compinit
 
 # source others
-source $HOME/dev/dotfiles/.zshrc_git
-source $HOME/dev/dotfiles/.zshrc_tmux
-source $HOME/dev/dotfiles/.zshrc_funcs
-source $HOME/dev/dotfiles/.zshrc_claude
-source $HOME/dev/dotfiles/.zshrc_vim
+source $HOME/dev/dotfiles/zshrc/git.zsh
+source $HOME/dev/dotfiles/zshrc/tmux.zsh
+source $HOME/dev/dotfiles/zshrc/funcs.zsh
+source $HOME/dev/dotfiles/zshrc/claude.zsh
+source $HOME/dev/dotfiles/zshrc/vim.zsh
 
 # general
 z() {

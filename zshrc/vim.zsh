@@ -6,7 +6,7 @@ v() {
   cat <<'EOF'
 vim aliases:
   settings
-    VIMINIT    sources ~/dev/dotfiles/.vimrc
+    VIMINIT    sources ~/dev/dotfiles/configs/vimrc
     undodir    ~/.vim/undo (persistent undo)
 EOF
 }
@@ -15,4 +15,4 @@ EOF
 mkdir -p ~/.vim/undo
 
 # point vim at repo-managed config
-export VIMINIT='source ~/dev/dotfiles/.vimrc'
+export VIMINIT='source ~/dev/dotfiles/configs/vimrc'
