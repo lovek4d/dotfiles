@@ -111,7 +111,7 @@ gspf() {
   entry=$(git stash list \
     | fzf --prompt='pop stash> ' --height=40% --reverse)
   [[ -z "$entry" ]] && return 1
-  git stash pop "${entry%%:*}"
+  git stash pop "$@" "${entry%%:*}"
 }
 
 ## stash drop (fzf select)
@@ -120,7 +120,7 @@ gsdf() {
   entry=$(git stash list \
     | fzf --prompt='drop stash> ' --height=40% --reverse)
   [[ -z "$entry" ]] && return 1
-  git stash drop "${entry%%:*}"
+  git stash drop "$@" "${entry%%:*}"
 }
 
 # commits
@@ -269,7 +269,7 @@ gwa() {
   base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
   local target="$base_dir/$branch"
   mkdir -p "$(dirname "$target")"
-  git worktree add "$target" "$branch"
+  git worktree add "$@" "$target" "$branch"
   echo "Worktree at: $target"
 }
 
@@ -289,7 +289,7 @@ gwd() {
   selected=$(git worktree list \
     | fzf --prompt='remove worktree> ' --height=40% --reverse \
     | awk '{print $1}')
-  [[ -n "$selected" ]] && git worktree remove "$selected"
+  [[ -n "$selected" ]] && git worktree remove "$@" "$selected"
 }
 
 # completions
