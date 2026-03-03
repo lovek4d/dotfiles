@@ -1,0 +1,18 @@
+v() {
+  if [[ $# -gt 0 ]]; then
+    vim "$@"
+    return
+  fi
+  cat <<'EOF'
+vim aliases:
+  settings
+    VIMINIT    sources ~/dev/dotfiles/.vimrc
+    undodir    ~/.vim/undo (persistent undo)
+EOF
+}
+
+# ensure undo dir exists
+mkdir -p ~/.vim/undo
+
+# point vim at repo-managed config
+export VIMINIT='source ~/dev/dotfiles/.vimrc'

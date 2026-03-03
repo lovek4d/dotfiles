@@ -40,6 +40,7 @@ tmux aliases:
     I:N    idle (results ready)   T:N  thinking (working)
 
   settings
+    tinit  symlink ~/.tmux.conf from repo
     set -g mouse on
 EOF
 }
@@ -108,6 +109,13 @@ tb() {
   tmux new-session -ds "$name" \; \
     send-keys -t "$name" "$*; _tb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
   echo "running in '$name'"
+}
+
+## symlink ~/.tmux.conf → repo config
+tinit() {
+  ln -sf ~/dev/dotfiles/tmux.conf ~/.tmux.conf
+  echo "linked ~/.tmux.conf → ~/dev/dotfiles/tmux.conf"
+  [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
 }
 
 ## claude queue: keybindings + status bar

@@ -10,6 +10,7 @@ source $HOME/dev/dotfiles/.zshrc_git
 source $HOME/dev/dotfiles/.zshrc_tmux
 source $HOME/dev/dotfiles/.zshrc_funcs
 source $HOME/dev/dotfiles/.zshrc_claude
+source $HOME/dev/dotfiles/.zshrc_vim
 
 # general
 z() {
@@ -33,6 +34,7 @@ zshrc aliases:
     c      claude aliases
     g      git aliases
     t      tmux aliases
+    v      vim aliases
 EOF
 }
 
