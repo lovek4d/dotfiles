@@ -43,7 +43,7 @@ def enqueue(typ, notify=True):
     return f"bash -c '{Q}; echo {typ} > \"$D/$S\"; {bell}'"
 
 dequeue = f"bash -c '{Q}; rm -f \"$D/$S\"'"
-to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ] && echo thinking > \"$f\"'"
+to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; if [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ]; then echo thinking > \"$f\"; fi'"
 
 settings["hooks"] = {
     "Notification": [
