@@ -91,7 +91,7 @@ _zinit_macos() {
   fi
 
   echo "=== brew packages ==="
-  brew install "$@"
+  brew install "$@" 2>&1 | grep -Ev "To reinstall|^  brew reinstall"
   echo "note: run 'colima start' to start the docker runtime"
 }
 
