@@ -48,7 +48,7 @@ EOF
 ## symlink ~/.tmux.conf → repo config
 tinit() {
   ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
-  echo "linked ~/.tmux.conf → ~/dev/dotfiles/configs/tmux.conf"
+  echo "symlinked ~/dev/dotfiles/configs/tmux.conf → ~/.tmux.conf"
   [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
 }
 
