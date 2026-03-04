@@ -1,4 +1,10 @@
 # helpers
+__git_branch_list() {
+  git branch --all --format='%(refname:short)' \
+    | sed 's#^remotes/##' \
+    | sort -u
+}
+
 __git_default_branch() {
   local b
   b="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | cut -d/ -f2)"
@@ -138,10 +144,7 @@ gmn() {
     git merge --no-edit "$@"
   else
     local branch
-    branch=$(git branch --all --format='%(refname:short)' \
-      | sed 's#^remotes/##' \
-      | sort -u \
-      | fzf --prompt='merge> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='merge> ' --height=40% --reverse)
     [[ -n "$branch" ]] && git merge --no-edit "$branch"
   fi
 }
@@ -169,10 +172,7 @@ gdb() {
     git diff "$@"
   else
     local branch
-    branch=$(git branch --all --format='%(refname:short)' \
-      | sed 's#^remotes/##' \
-      | sort -u \
-      | fzf --prompt='diff branch> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='diff branch> ' --height=40% --reverse)
     [[ -n "$branch" ]] && git diff "$branch"
   fi
 }
@@ -195,10 +195,7 @@ gsw() {
     git switch "$1"
   else
     local branch
-    branch=$(git branch --all --format='%(refname:short)' \
-      | sed 's#^remotes/##' \
-      | sort -u \
-      | fzf --prompt='switch> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='switch> ' --height=40% --reverse)
     [[ -n "$branch" ]] && git switch "$branch"
   fi
 }
@@ -209,10 +206,7 @@ gswd() {
     git switch -d "$1"
   else
     local branch
-    branch=$(git branch --all --format='%(refname:short)' \
-      | sed 's#^remotes/##' \
-      | sort -u \
-      | fzf --prompt='detach> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='detach> ' --height=40% --reverse)
     [[ -n "$branch" ]] && git switch -d "$branch"
   fi
 }
@@ -240,7 +234,7 @@ gdl() {
     branches=$(git branch --format='%(refname:short)' \
       | fzf --multi --prompt='delete branch> ' --height=40% --reverse)
     [[ -z "$branches" ]] && return 1
-    echo "$branches" | xargs -n1 git branch -D
+    echo "$branches" | xargs -n1 git branch -D --
   fi
 }
 

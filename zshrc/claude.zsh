@@ -103,24 +103,32 @@ EOF
   if [[ -n "$1" ]]; then
     branch="$1"
   else
-    branch=$(git branch -a --format='%(refname:short)' \
-      | fzf --prompt='worktree branch> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse)
     [[ -z "$branch" ]] && return 1
   fi
 
-  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
-  local target="$base_dir/$branch"
+  # strip remote prefix (e.g. origin/foo → foo)
+  local local_branch="$branch" start_point=""
+  if [[ "$branch" == */* ]] && ! git show-ref --verify --quiet "refs/heads/$branch"; then
+    local_branch="${branch#*/}"
+    start_point="$branch"
+  fi
 
-  # create worktree: new branch from HEAD if doesn't exist, else use existing
-  if git show-ref --verify --quiet "refs/heads/$branch"; then
-    git worktree add "$target" "$branch"
+  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
+  local target="$base_dir/$local_branch"
+
+  # create worktree: reuse existing local branch, track remote, or new from HEAD
+  if git show-ref --verify --quiet "refs/heads/$local_branch"; then
+    git worktree add "$target" "$local_branch"
+  elif [[ -n "$start_point" ]]; then
+    git worktree add -b "$local_branch" "$target" "$start_point"
   else
-    git worktree add -b "$branch" "$target"
+    git worktree add -b "$local_branch" "$target"
   fi
   [[ $? -ne 0 ]] && return 1
 
   # sanitize branch name for tmux session (replace / with -)
-  local session="${branch//\//-}"
+  local session="${local_branch//\//-}"
 
   # create tmux session: launch claude, then auto-remove worktree on exit
   local cmd="claude; cd '${root}' && git worktree remove '${target}'"
