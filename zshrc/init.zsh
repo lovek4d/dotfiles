@@ -49,9 +49,9 @@ zinit() {
   local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker
+    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship
   elif __is_linux; then
-    _zinit_linux "${pkgs[@]}" xclip docker.io
+    _zinit_linux "${pkgs[@]}" zsh xclip docker.io
   else
     echo "unsupported platform: $OSTYPE" && return 1
   fi
@@ -104,6 +104,18 @@ _zinit_linux() {
     echo "=== installing claude-code ==="
     npm install -g @anthropic-ai/claude-code
   fi
+
+  # starship prompt
+  if ! command -v starship >/dev/null 2>&1; then
+    echo "=== installing starship ==="
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+  fi
+
+  # set zsh as default shell
+  if [[ "$SHELL" != */zsh ]]; then
+    echo "=== setting zsh as default shell ==="
+    chsh -s "$(which zsh)"
+  fi
 }
 
 alias dev='cd ~/dev'
@@ -151,4 +163,9 @@ if __is_macos && command -v brew >/dev/null 2>&1; then
 else
   [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
   [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
+
+# starship prompt
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
 fi
