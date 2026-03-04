@@ -14,7 +14,8 @@ claude aliases:
     cqo    claude --print --model opus
     cqs    claude --print --model sonnet
   workflow
-    cgt    worktree + tmux + claude
+    cgt    worktree + tmux + claude (new branches from default)
+    cgtb   worktree from fzf-selected base branch
     cgtd   destroy worktree + tmux session
     cup    upgrade claude-code
   queue
@@ -76,6 +77,19 @@ else
   alias cup='npm update -g @anthropic-ai/claude-code'
 fi
 
+__cgt_session() {
+  local root="$1" target="$2" local_branch="$3"
+  local session="${local_branch//\//-}"
+  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+
+  if [[ -n "$TMUX" ]]; then
+    tmux new-session -ds "$session" -c "$target" "$cmd"
+    tmux switch-client -t "$session"
+  else
+    tmux new-session -s "$session" -c "$target" "$cmd"
+  fi
+}
+
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     cat <<'EOF'
@@ -84,6 +98,7 @@ cgt — create a worktree + tmux session + launch claude code
 usage: cgt [branch-name]
 
   If branch-name is given, creates (or reuses) that branch.
+  New branches start from the default branch (main/master).
   If omitted, fzf-selects from existing branches.
 
   Creates a git worktree, opens a tmux session named after
@@ -118,28 +133,53 @@ EOF
   local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
   local target="$base_dir/$local_branch"
 
-  # create worktree: reuse existing local branch, track remote, or new from HEAD
+  # create worktree: reuse existing local branch, track remote, or new from default branch
   if git show-ref --verify --quiet "refs/heads/$local_branch"; then
     git worktree add "$target" "$local_branch"
   elif [[ -n "$start_point" ]]; then
     git worktree add -b "$local_branch" "$target" "$start_point"
   else
-    git worktree add -b "$local_branch" "$target"
+    git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
   fi
   [[ $? -ne 0 ]] && return 1
 
-  # sanitize branch name for tmux session (replace / with -)
-  local session="${local_branch//\//-}"
+  __cgt_session "$root" "$target" "$local_branch"
+}
 
-  # create tmux session: launch claude, then auto-remove worktree on exit
-  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+cgtb() {
+  if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+    cat <<'EOF'
+cgtb — worktree + tmux + claude from a specific base branch
 
-  if [[ -n "$TMUX" ]]; then
-    tmux new-session -ds "$session" -c "$target" "$cmd"
-    tmux switch-client -t "$session"
-  else
-    tmux new-session -s "$session" -c "$target" "$cmd"
+usage: cgtb <new-branch>
+
+  Creates a new branch from an fzf-selected base branch.
+  Otherwise identical to cgt.
+EOF
+    return 0
   fi
+
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+
+  local local_branch="$1"
+
+  if git show-ref --verify --quiet "refs/heads/$local_branch"; then
+    echo "branch '$local_branch' already exists (use cgt to reuse it)"
+    return 1
+  fi
+
+  local base
+  base=$(__git_branch_list | fzf --prompt='base branch> ' --height=40% --reverse)
+  [[ -z "$base" ]] && return 1
+
+  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
+  local target="$base_dir/$local_branch"
+
+  git worktree add -b "$local_branch" "$target" "$base"
+  [[ $? -ne 0 ]] && return 1
+
+  __cgt_session "$root" "$target" "$local_branch"
 }
 
 cgtd() {
