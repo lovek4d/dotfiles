@@ -3,6 +3,8 @@ __is_macos() { [[ "$OSTYPE" == darwin* ]]; }
 __is_linux() { [[ "$OSTYPE" == linux* ]]; }
 
 # clipboard abstraction
+unalias clipcopy clippaste 2>/dev/null
+unfunction clipcopy clippaste 2>/dev/null
 if __is_macos; then
   alias clipcopy='pbcopy'
   alias clippaste='pbpaste'
