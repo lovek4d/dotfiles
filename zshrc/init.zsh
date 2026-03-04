@@ -7,6 +7,15 @@ HISTSIZE=50000
 SAVEHIST=50000
 setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 
+# keybindings
+bindkey '\e[1;3D' backward-word        # option+left
+bindkey '\e[1;3C' forward-word         # option+right
+bindkey '\e\x7f'  backward-kill-word   # option+backspace
+bindkey '\e[3~'   delete-char          # delete (fn+backspace)
+bindkey '\e[3;3~' kill-word            # option+delete
+bindkey '\e[H'    beginning-of-line    # home
+bindkey '\e[F'    end-of-line          # end
+
 # autocomplete (must be before sourcing files that use compdef)
 if command -v brew >/dev/null 2>&1; then
   FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
