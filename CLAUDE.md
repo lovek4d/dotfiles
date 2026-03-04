@@ -14,16 +14,18 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/tmux.zsh` — tmux aliases, keybindings, and Claude queue status bar integration
 - `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and queue system (`cw`/`cwf`/`cwd`/`cinit`)
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
-- `zshrc/funcs.zsh` — misc utilities (e.g., `redact-json`)
+- `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key generation (`skey`), agent (`sagent`)
+- `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
 - `configs/vimrc` — vim config (persistent undo)
 
 ## Conventions
 
-- **Help functions as passthroughs**: `g`, `t`, `c`, `v`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
+- **Help functions as passthroughs**: `g`, `t`, `c`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
 - **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise present an fzf selector (e.g., `gsw`, `ts`, `gmn`, `gdb`).
 - **`__git_default_branch()`**: Auto-detects `main` vs `master` — used by `gmm`, `gdm`, `gswm`.
 - **Platform abstraction**: Use `clipcopy`/`clippaste` instead of `pbcopy`/`pbpaste`, and `__notify` instead of `osascript`. Platform helpers live in `zshrc/platform.zsh`.
+- **Zoxide navigation**: `j`/`ji` for directory jumping (uses `--cmd j` to avoid conflict with `z` help function).
 
 ## Queue System
 
@@ -31,4 +33,4 @@ File-based state in `~/.claude/queue/` tracks Claude Code session status across 
 
 ## Setup
 
-`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both finish with `tinit` and `cinit`.
+`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both finish with `tinit` and `cinit`.

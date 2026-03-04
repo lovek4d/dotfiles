@@ -22,3 +22,32 @@ data = json.loads(raw)
 print(json.dumps(redact(data), indent=2))
 EOF
 }
+
+# fzf multi-select process killer
+pk() {
+  local sig="${1:-TERM}"
+  local pids
+  pids=$(ps aux | fzf --multi --header='select processes to kill' | awk '{print $2}')
+  [[ -z "$pids" ]] && return 0
+  echo "$pids" | xargs kill -"$sig"
+  echo "sent SIG$sig to: $(echo $pids | tr '\n' ' ')"
+}
+
+# show what's on a port, prompt to kill
+port() {
+  [[ -z "$1" ]] && echo "usage: port <number>" && return 1
+  local output
+  output=$(lsof -i :"$1" -sTCP:LISTEN 2>/dev/null)
+  if [[ -z "$output" ]]; then
+    echo "nothing on port $1"
+    return 0
+  fi
+  echo "$output"
+  local pid
+  pid=$(echo "$output" | awk 'NR>1 {print $2}' | head -1)
+  [[ -z "$pid" ]] && return 0
+  echo ""
+  read -q "reply?kill pid $pid? [y/N] " || { echo; return 0; }
+  echo
+  kill "$pid" && echo "killed $pid"
+}

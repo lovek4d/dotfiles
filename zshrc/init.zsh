@@ -1,6 +1,12 @@
 # platform detection (must be first)
 source $HOME/dev/dotfiles/zshrc/platform.zsh
 
+# history
+HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
+HISTSIZE=50000
+SAVEHIST=50000
+setopt SHARE_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
+
 # autocomplete (must be before sourcing files that use compdef)
 if command -v brew >/dev/null 2>&1; then
   FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
@@ -17,6 +23,7 @@ source $HOME/dev/dotfiles/zshrc/tmux.zsh
 source $HOME/dev/dotfiles/zshrc/funcs.zsh
 source $HOME/dev/dotfiles/zshrc/claude.zsh
 source $HOME/dev/dotfiles/zshrc/vim.zsh
+source $HOME/dev/dotfiles/zshrc/ssh.zsh
 
 # general
 z() {
@@ -27,6 +34,10 @@ zshrc aliases:
     docker_prune docker system prune -a --volumes
     python       python3
     wdvenv       source .venv/bin/activate
+  navigation
+    j <dir>  zoxide jump
+    ji       zoxide interactive
+    mkcd     mkdir + cd
   dotfiles
     zinit  install/upgrade all deps
     zpl    git pull dotfiles + source
@@ -36,9 +47,12 @@ zshrc aliases:
     zvim   edit .zshrc
   misc
     redact-json  redact JSON from clipboard
+    pk           fzf process killer
+    port <n>     show/kill process on port
   help
     c      claude aliases
     g      git aliases
+    s      ssh aliases
     t      tmux aliases
     v      vim aliases
 EOF
@@ -46,7 +60,7 @@ EOF
 
 # bootstrap
 zinit() {
-  local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting)
+  local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
 
   if __is_macos; then
     _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship
@@ -133,7 +147,9 @@ _zinit_linux() {
   fi
 }
 
+# nav basics
 alias dev='cd ~/dev'
+mkcd() { mkdir -p "$1" && cd "$1"; }
 
 # python basics
 alias python='python3'
@@ -169,6 +185,11 @@ elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
+# zoxide (j/ji)
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh --cmd j)"
+fi
+
 # zsh plugins (syntax-highlighting must be last)
 if __is_macos && command -v brew >/dev/null 2>&1; then
   _bp="$(brew --prefix)"
@@ -184,3 +205,12 @@ fi
 if command -v starship >/dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
+
+# fzf key-bindings (ctrl+r history search)
+if __is_macos && command -v brew >/dev/null 2>&1; then
+  _fzf_keys="$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
+  _fzf_keys="/usr/share/doc/fzf/examples/key-bindings.zsh"
+fi
+[[ -n "$_fzf_keys" && -s "$_fzf_keys" ]] && source "$_fzf_keys"
+unset _fzf_keys
