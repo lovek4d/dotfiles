@@ -91,8 +91,8 @@ _zinit_macos() {
   fi
 
   echo "=== brew packages ==="
-  brew install "$@" 2>&1 | grep -Ev "To reinstall|^  brew reinstall"
-  echo "note: run 'colima start' to start the docker runtime"
+  brew install "$@" 2>&1 | grep -Ev "To reinstall|^  brew reinstall" | sed 's/^Warning: //'
+  brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 }
 
 _zinit_linux() {
