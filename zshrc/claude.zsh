@@ -109,7 +109,8 @@ EOF
 
   # strip remote prefix (e.g. origin/foo → foo)
   local local_branch="$branch" start_point=""
-  if [[ "$branch" == */* ]] && ! git show-ref --verify --quiet "refs/heads/$branch"; then
+  local remote_prefix="${branch%%/*}"
+  if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" && ! git show-ref --verify --quiet "refs/heads/$branch"; then
     local_branch="${branch#*/}"
     start_point="$branch"
   fi
