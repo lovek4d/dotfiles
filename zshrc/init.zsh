@@ -61,6 +61,10 @@ zinit() {
   echo "=== tmux ==="
   tinit
 
+  echo "=== starship ==="
+  mkdir -p "$HOME/.config"
+  ln -sf "$HOME/dev/dotfiles/configs/starship.toml" "$HOME/.config/starship.toml"
+
   echo "=== claude ==="
   cinit
 
