@@ -57,6 +57,7 @@ zinit() {
   fi
 
   mkdir -p "$HOME/.nvm"
+  echo "created ~/.nvm"
 
   echo "=== tmux ==="
   tinit
@@ -64,6 +65,7 @@ zinit() {
   echo "=== starship ==="
   mkdir -p "$HOME/.config"
   ln -sf "$HOME/dev/dotfiles/configs/starship.toml" "$HOME/.config/starship.toml"
+  echo "symlinked starship.toml → ~/.config/starship.toml"
 
   echo "=== claude ==="
   cinit
