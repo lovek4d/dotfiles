@@ -51,7 +51,7 @@ zinit() {
   if __is_macos; then
     _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship
   elif __is_linux; then
-    _zinit_linux "${pkgs[@]}" zsh xclip docker.io
+    _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io
   else
     echo "unsupported platform: $OSTYPE" && return 1
   fi
@@ -97,6 +97,14 @@ _zinit_linux() {
   if [[ ! -d "$HOME/.nvm" ]]; then
     echo "=== installing nvm ==="
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  fi
+
+  # load nvm + install node
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  if ! command -v node >/dev/null 2>&1; then
+    echo "=== installing node via nvm ==="
+    nvm install --lts
   fi
 
   # claude-code via npm
