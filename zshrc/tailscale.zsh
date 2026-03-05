@@ -54,7 +54,13 @@ _ts_pick_device() {
 tssh() {
   local device=${1:-$(_ts_pick_device 'ssh device> ')}
   [[ -z "$device" ]] && return 1
-  ssh "$device"
+  local ip
+  ip=$(tailscale status | awk -v d="$device" '$2 == d { print $1; exit }')
+  if [[ -z "$ip" ]]; then
+    echo "tssh: device '$device' not found in tailnet" >&2
+    return 1
+  fi
+  ssh "$ip"
 }
 
 ## ping tailnet device (inline or fzf pick)
