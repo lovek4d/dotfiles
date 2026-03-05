@@ -34,6 +34,7 @@ source $HOME/dev/dotfiles/zshrc/funcs.zsh
 source $HOME/dev/dotfiles/zshrc/claude.zsh
 source $HOME/dev/dotfiles/zshrc/vim.zsh
 source $HOME/dev/dotfiles/zshrc/ssh.zsh
+source $HOME/dev/dotfiles/zshrc/docker.zsh
 
 # general
 z() {
@@ -41,7 +42,6 @@ z() {
 zshrc aliases:
   general
     dev          cd ~/dev
-    docker_prune docker system prune -a --volumes
     python       python3
     wdvenv       source .venv/bin/activate
   navigation
@@ -61,6 +61,7 @@ zshrc aliases:
     port <n>     show/kill process on port
   help
     c      claude aliases
+    d      docker aliases
     g      git aliases
     s      ssh aliases
     tm     tmux aliases
@@ -122,6 +123,13 @@ _zinit_linux() {
   sudo apt update
   sudo apt install -y "$@"
 
+  # add user to docker group (takes effect on next login)
+  if getent group docker >/dev/null 2>&1 && ! groups | grep -qw docker; then
+    echo "=== adding $USER to docker group ==="
+    sudo usermod -aG docker "$USER"
+    echo "docker group added (re-login to take effect)"
+  fi
+
   # nvm via install script
   export NVM_DIR="$HOME/.nvm"
   mkdir -p "$NVM_DIR"
@@ -166,6 +174,9 @@ _zinit_linux() {
 alias dev='cd ~/dev'
 mkcd() { mkdir -p "$1" && cd "$1"; }
 
+# sudo (trailing space expands aliases after sudo)
+alias sudo='sudo '
+
 # python basics
 alias python='python3'
 alias wdvenv='source .venv/bin/activate'
@@ -189,9 +200,6 @@ alias zpl='git -C ~/dev/dotfiles pull && source ~/.zshrc'
 alias zvim='${EDITOR:-vim} ~/.zshrc'
 alias zsrc='source ~/.zshrc'
 alias zup='zvim && zsrc'
-
-# docker
-alias docker_prune='docker system prune -a --volumes'
 
 # brew shell init
 if __is_macos; then

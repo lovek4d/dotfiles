@@ -15,6 +15,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/tailscale.zsh` — Tailscale aliases (`ts` prefix), fzf device pickers, and `tsinit` for auth
 - `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and queue system (`cw`/`cwf`/`cwd`/`cinit`)
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
+- `zshrc/docker.zsh` — Docker aliases (`d` prefix), compose (`dc` prefix), fzf container/image pickers
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key generation (`skey`), agent (`sagent`)
 - `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
@@ -22,7 +23,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Conventions
 
-- **Help functions as passthroughs**: `g`, `tm`, `ts`, `c`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
+- **Help functions as passthroughs**: `g`, `tm`, `ts`, `c`, `d`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
 - **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise present an fzf selector (e.g., `gsw`, `tms`, `gmn`, `gdb`).
 - **`__git_default_branch()`**: Auto-detects `main` vs `master` — used by `gmm`, `gdm`, `gswm`.
 - **Platform abstraction**: Use `clipcopy`/`clippaste` instead of `pbcopy`/`pbpaste`, and `__notify` instead of `osascript`. Platform helpers live in `zshrc/platform.zsh`.
