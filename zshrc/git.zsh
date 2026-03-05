@@ -76,6 +76,7 @@ git aliases:
   merging
     gcp    git cherry-pick
     gm     git merge
+    gmb    merge branch (fzf)
     gmm    merge upstream main
     gmn    merge --no-edit (fzf)
     gmo    merge -X ours
@@ -88,6 +89,8 @@ git aliases:
     gd     git diff
     gdc    git diff HEAD~1
     gdcp   copy diff to clipboard
+    gdap   apply diff from clipboard
+    gdaw   apply from worktree (fzf)
     gdb    diff branch (fzf)
     gdm    git diff main
   resets
@@ -109,6 +112,7 @@ git aliases:
     gwl    git worktree list
     gwp    git worktree prune
     gws    cd to worktree (fzf)
+    gwsm   cd to main worktree
   setup
     ginit  set git user.name + user.email
 EOF
@@ -174,6 +178,17 @@ gmn() {
     [[ -n "$branch" ]] && git merge --no-edit "$branch"
   fi
 }
+## merge branch (inline or fzf select)
+gmb() {
+  if [[ -n "$1" ]]; then
+    git merge "$1"
+  else
+    local branch
+    branch=$(__git_branch_list | fzf --prompt='merge> ' --height=40% --reverse)
+    [[ -n "$branch" ]] && git merge "$branch"
+  fi
+}
+
 alias gmo='git merge -X ours'
 alias gmt='git merge -X theirs'
 alias gmon='git merge -X ours --no-edit'
@@ -191,6 +206,16 @@ gmm() {
 alias gd='git diff'
 alias gdc='git diff HEAD~1'
 alias gdcp='git diff | clipcopy && echo "Copied diff to clipboard"'
+alias gdap='clippaste | git apply && echo "Applied diff from clipboard"'
+
+## apply diff from worktree (fzf select)
+gdaw() {
+  local wt
+  wt=$(git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' \
+    | fzf --prompt='apply from worktree> ' --height=40% --reverse)
+  [[ -n "$wt" ]] || return
+  git -C "$wt" diff | git apply && echo "Applied diff from $wt"
+}
 
 ## diff branch (inline or fzf select)
 gdb() {
@@ -312,6 +337,13 @@ gwd() {
   [[ -n "$selected" ]] && git worktree remove "$@" "$selected"
 }
 
+## cd to main worktree
+gwsm() {
+  local main_wt
+  main_wt=$(git worktree list --porcelain | grep '^worktree ' | head -1 | sed 's/^worktree //')
+  [[ -n "$main_wt" ]] && cd "$main_wt"
+}
+
 # completions
 __git_complete_as() {
   words=(git $1 "${(@)words[2,-1]}")
@@ -323,9 +355,11 @@ __git_complete_as() {
 _gsw()  { __git_complete_as switch }
 _gswd() { __git_complete_as switch }
 _gdb()  { __git_complete_as diff   }
+_gmb()  { __git_complete_as merge  }
 _gmn()  { __git_complete_as merge  }
 
 compdef _gsw  gsw
 compdef _gswd gswd
 compdef _gdb  gdb
+compdef _gmb  gmb
 compdef _gmn  gmn
