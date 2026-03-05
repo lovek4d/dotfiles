@@ -90,6 +90,9 @@ zinit() {
   ln -sf "$HOME/dev/dotfiles/configs/starship.toml" "$HOME/.config/starship.toml"
   echo "symlinked ~/dev/dotfiles/configs/starship.toml → ~/.config/starship.toml"
 
+  echo "=== ssh ==="
+  sinit
+
   echo "=== claude ==="
   cinit
 

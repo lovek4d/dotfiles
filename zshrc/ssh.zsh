@@ -1,3 +1,8 @@
+# auto-load ssh key into agent
+if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+  ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
+fi
+
 # ssh passthrough
 s() {
   if [[ $# -eq 0 ]]; then
@@ -9,6 +14,8 @@ ssh aliases:
   keys
     skey       generate ed25519 key + copy pubkey
     sagent     start ssh-agent + add default key
+  setup
+    sinit      generate key + add to agent + copy pubkey
 EOF
     return 0
   fi
@@ -42,4 +49,17 @@ sagent() {
     eval "$(ssh-agent -s)"
   fi
   ssh-add ~/.ssh/id_ed25519 2>/dev/null || ssh-add
+}
+
+# bootstrap: generate key + add to agent + copy pubkey
+sinit() {
+  local keyfile="$HOME/.ssh/id_ed25519"
+  mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+  if [[ ! -f "$keyfile" ]]; then
+    echo "generating ssh key (no passphrase)..."
+    ssh-keygen -t ed25519 -C "$(whoami)@$(hostname -s)" -f "$keyfile" -N "" || return 1
+  fi
+  ssh-add "$keyfile" 2>/dev/null
+  clipcopy < "${keyfile}.pub"
+  echo "public key copied to clipboard — add to GitHub: https://github.com/settings/ssh/new"
 }
