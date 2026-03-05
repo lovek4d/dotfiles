@@ -38,6 +38,12 @@ skey() {
   local email="${1:-$(git config user.email)}"
   [[ -z "$email" ]] && echo "usage: skey <email>" && return 1
   local keyfile="$HOME/.ssh/id_ed25519"
+  if [[ -f "$keyfile" ]]; then
+    echo "key already exists: $keyfile"
+    clipcopy < "${keyfile}.pub"
+    echo "public key copied to clipboard"
+    return 0
+  fi
   ssh-keygen -t ed25519 -C "$email" -f "$keyfile" || return 1
   clipcopy < "${keyfile}.pub"
   echo "public key copied to clipboard"
