@@ -41,13 +41,13 @@ skey() {
   local keyfile="$HOME/.ssh/id_ed25519"
   if [[ -f "$keyfile" ]]; then
     echo "key already exists: $keyfile"
-    clipcopy < "${keyfile}.pub"
-    echo "public key copied to clipboard"
+    clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
+      || echo "public key:\n$(cat "${keyfile}.pub")"
     return 0
   fi
   ssh-keygen -t ed25519 -C "$email" -f "$keyfile" || return 1
-  clipcopy < "${keyfile}.pub"
-  echo "public key copied to clipboard"
+  clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
+    || echo "public key:\n$(cat "${keyfile}.pub")"
 }
 
 # copy public key to remote host (passwordless login)
@@ -73,6 +73,7 @@ sinit() {
     ssh-keygen -t ed25519 -C "$(whoami)@$(hostname -s)" -f "$keyfile" -N "" || return 1
   fi
   ssh-add "$keyfile" 2>/dev/null
-  clipcopy < "${keyfile}.pub"
-  echo "public key copied to clipboard — add to GitHub: https://github.com/settings/ssh/new"
+  clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
+    || echo "public key:\n$(cat "${keyfile}.pub")"
+  echo "add to GitHub: https://github.com/settings/ssh/new"
 }
