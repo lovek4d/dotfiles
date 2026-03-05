@@ -1,4 +1,4 @@
-t() {
+tm() {
   if [[ $# -gt 0 ]]; then
     tmux "$@"
     return
@@ -6,18 +6,18 @@ t() {
   cat <<'EOF'
 tmux aliases:
   sessions
-    tb  background command, notify on done
-    td  detach
-    tk  kill session (fzf)
-    tl  list-sessions
-    tn  new session <name>
-    ts  switch session (fzf)
+    tmb  background command, notify on done
+    tmd  detach
+    tmk  kill session (fzf)
+    tml  list-sessions
+    tmn  new session <name>
+    tms  switch session (fzf)
 
   panes
-    trpd  resize pane down  5
-    trpl  resize pane left  5
-    trpr  resize pane right 5
-    trpu  resize pane up    5
+    tmrpd  resize pane down  5
+    tmrpl  resize pane left  5
+    tmrpr  resize pane right 5
+    tmrpu  resize pane up    5
 
   keybindings (ctrl+b …)
     "      split horizontal
@@ -40,30 +40,30 @@ tmux aliases:
     I:N    idle (results ready)   T:N  thinking (working)
 
   settings
-    tinit  symlink ~/.tmux.conf from repo
+    tminit  symlink ~/.tmux.conf from repo
     set -g mouse on
 EOF
 }
 
 ## symlink ~/.tmux.conf → repo config
-tinit() {
+tminit() {
   ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
   echo "symlinked ~/dev/dotfiles/configs/tmux.conf → ~/.tmux.conf"
   [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
 }
 
 # simple aliases
-alias tl='tmux list-sessions'
-alias td='tmux detach'
-alias trpu='tmux resize-pane -U 5'
-alias trpd='tmux resize-pane -D 5'
-alias trpl='tmux resize-pane -L 5'
-alias trpr='tmux resize-pane -R 5'
+alias tml='tmux list-sessions'
+alias tmd='tmux detach'
+alias tmrpu='tmux resize-pane -U 5'
+alias tmrpd='tmux resize-pane -D 5'
+alias tmrpl='tmux resize-pane -L 5'
+alias tmrpr='tmux resize-pane -R 5'
 
 ## create named session (avoids nesting)
-tn() {
+tmn() {
   if [[ -z "$1" ]]; then
-    echo "usage: tn <name>" && return 1
+    echo "usage: tmn <name>" && return 1
   fi
   if [[ -n "$TMUX" ]]; then
     tmux new-session -ds "$1" && tmux switch-client -t "$1"
@@ -73,7 +73,7 @@ tn() {
 }
 
 ## switch session (inline or fzf select)
-ts() {
+tms() {
   if [[ -n "$1" ]]; then
     if [[ -n "$TMUX" ]]; then
       tmux switch-client -t "$1"
@@ -94,32 +94,32 @@ ts() {
 }
 
 ## background command with notification on completion
-_tb_notify() {
+_tmb_notify() {
   local rc=$1 cmd=$2 session=$3
   local tag="DONE" sound="Glass"
   [[ $rc -ne 0 ]] && tag="FAILED" && sound="Basso"
   tmux rename-session -t "$session" "${session}_${tag}" 2>/dev/null
   __notify "$tag" "$cmd" "$sound"
   clear
-  echo "[tb] $tag (exit $rc): $cmd"
+  echo "[tmb] $tag (exit $rc): $cmd"
   echo "press any key to close"
   read -k1
   exit
 }
 
-tb() {
-  [[ -z "$1" ]] && echo "usage: tb <command...>" && return 1
+tmb() {
+  [[ -z "$1" ]] && echo "usage: tmb <command...>" && return 1
   local name="bg-$(echo "$*" | awk '{for(i=1;i<=3&&i<=NF;i++) printf (i>1?"_":"") $i}')"
   if tmux has-session -t "$name" 2>/dev/null; then
     echo "already running $name" && return 1
   fi
   tmux new-session -ds "$name" \; \
-    send-keys -t "$name" "$*; _tb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
+    send-keys -t "$name" "$*; _tmb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
   echo "running in '$name'"
 }
 
 ## kill session (inline or fzf select)
-tk() {
+tmk() {
   if [[ -n "$1" ]]; then
     tmux kill-session -t "$1"
   else

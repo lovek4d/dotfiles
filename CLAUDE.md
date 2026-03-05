@@ -11,7 +11,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/platform.zsh` — platform detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), and notification (`__notify`) abstractions
 - `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`) and general aliases, loads zsh plugins
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
-- `zshrc/tmux.zsh` — tmux aliases, keybindings, and Claude queue status bar integration
+- `zshrc/tmux.zsh` — tmux aliases (`tm` prefix), keybindings, and Claude queue status bar integration
+- `zshrc/tailscale.zsh` — Tailscale aliases (`ts` prefix), fzf device pickers, and `tsinit` for auth
 - `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and queue system (`cw`/`cwf`/`cwd`/`cinit`)
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key generation (`skey`), agent (`sagent`)
@@ -21,8 +22,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Conventions
 
-- **Help functions as passthroughs**: `g`, `t`, `c`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
-- **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise present an fzf selector (e.g., `gsw`, `ts`, `gmn`, `gdb`).
+- **Help functions as passthroughs**: `g`, `tm`, `ts`, `c`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
+- **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise present an fzf selector (e.g., `gsw`, `tms`, `gmn`, `gdb`).
 - **`__git_default_branch()`**: Auto-detects `main` vs `master` — used by `gmm`, `gdm`, `gswm`.
 - **Platform abstraction**: Use `clipcopy`/`clippaste` instead of `pbcopy`/`pbpaste`, and `__notify` instead of `osascript`. Platform helpers live in `zshrc/platform.zsh`.
 - **Zoxide navigation**: `j`/`ji` for directory jumping (uses `--cmd j` to avoid conflict with `z` help function).
@@ -33,4 +34,4 @@ File-based state in `~/.claude/queue/` tracks Claude Code session status across 
 
 ## Setup
 
-`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both finish with `tinit` and `cinit`.
+`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both finish with `tminit` and `cinit`.

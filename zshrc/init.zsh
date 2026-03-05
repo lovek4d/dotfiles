@@ -29,6 +29,7 @@ autoload -Uz compinit && compinit
 # source others
 source $HOME/dev/dotfiles/zshrc/git.zsh
 source $HOME/dev/dotfiles/zshrc/tmux.zsh
+source $HOME/dev/dotfiles/zshrc/tailscale.zsh
 source $HOME/dev/dotfiles/zshrc/funcs.zsh
 source $HOME/dev/dotfiles/zshrc/claude.zsh
 source $HOME/dev/dotfiles/zshrc/vim.zsh
@@ -62,7 +63,8 @@ zshrc aliases:
     c      claude aliases
     g      git aliases
     s      ssh aliases
-    t      tmux aliases
+    tm     tmux aliases
+    ts     tailscale aliases
     v      vim aliases
 EOF
 }
@@ -72,7 +74,7 @@ zinit() {
   local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship
+    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship tailscale
   elif __is_linux; then
     _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io
   else
@@ -83,7 +85,7 @@ zinit() {
   echo "created ~/.nvm"
 
   echo "=== tmux ==="
-  tinit
+  tminit
 
   echo "=== starship ==="
   mkdir -p "$HOME/.config"
@@ -147,6 +149,12 @@ _zinit_linux() {
   if ! command -v starship >/dev/null 2>&1; then
     echo "=== installing starship ==="
     curl -sS https://starship.rs/install.sh | sh -s -- -y
+  fi
+
+  # tailscale
+  if ! command -v tailscale >/dev/null 2>&1; then
+    echo "=== installing tailscale ==="
+    curl -fsSL https://tailscale.com/install.sh | sh
   fi
 
   # set zsh as default shell
