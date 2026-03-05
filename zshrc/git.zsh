@@ -97,7 +97,7 @@ git aliases:
     gm     git merge
     gmb    merge branch (fzf)
     gmm    merge upstream main
-    gmn    merge --no-edit (fzf)
+    gmbn   merge --no-edit (fzf)
     gmbs   merge --squash (fzf)
     gmo    merge -X ours
     gmon   -X ours --no-edit
@@ -175,7 +175,7 @@ alias gcan='git commit --amend --no-edit'
 alias gm='git merge'
 alias gms='git merge --squash'
 ## merge (inline or fzf select)
-gmn() { __git_fzf_branch  'merge --no-edit' 'merge> ' "$@"; }
+gmbn() { __git_fzf_branch 'merge --no-edit' 'merge> ' "$@"; }
 gmb() { __git_fzf_branch  'merge'           'merge> ' "$@"; }
 gmbs() { __git_fzf_branch 'merge --squash'  'squash merge> ' "$@"; }
 
@@ -320,12 +320,12 @@ _gsw()  { __git_complete_as switch }
 _gswd() { __git_complete_as switch }
 _gdb()  { __git_complete_as diff   }
 _gmb()  { __git_complete_as merge  }
-_gmn()  { __git_complete_as merge  }
+_gmbn() { __git_complete_as merge  }
 _gmbs() { __git_complete_as merge  }
 
 compdef _gsw  gsw
 compdef _gswd gswd
 compdef _gdb  gdb
 compdef _gmb  gmb
-compdef _gmn  gmn
+compdef _gmbn gmbn
 compdef _gmbs gmbs

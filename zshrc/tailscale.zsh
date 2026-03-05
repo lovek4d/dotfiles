@@ -38,8 +38,10 @@ tsinit() {
     local i=0
     while ! tailscale status &>/dev/null && (( i++ < 10 )); do sleep 1; done
     tailscale up
+    echo "tailscale connected"
   else
     sudo tailscale up
+    echo "tailscale connected"
   fi
 }
 
