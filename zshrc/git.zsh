@@ -1,4 +1,23 @@
 # helpers
+__git_fzf_branch() {
+  local cmd=$1 prompt=$2; shift 2
+  if [[ -n "$1" ]]; then
+    git ${=cmd} "$@"
+  else
+    local branch
+    branch=$(__git_branch_list | fzf --prompt="$prompt" --height=40% --reverse)
+    [[ -n "$branch" ]] && git ${=cmd} "$branch"
+  fi
+}
+
+__git_stash_fzf() {
+  local action=$1 prompt=$2; shift 2
+  local entry
+  entry=$(git stash list | fzf --prompt="$prompt" --height=40% --reverse)
+  [[ -z "$entry" ]] && return 1
+  git stash $action "$@" "${entry%%:*}"
+}
+
 __git_branch_list() {
   git branch --all --format='%(refname:short)' \
     | sed 's#^remotes/##' \
@@ -79,6 +98,7 @@ git aliases:
     gmb    merge branch (fzf)
     gmm    merge upstream main
     gmn    merge --no-edit (fzf)
+    gmbs   merge --squash (fzf)
     gmo    merge -X ours
     gmon   -X ours --no-edit
     gms    merge --squash
@@ -141,23 +161,9 @@ alias gsl='git stash list'
 alias gsa='git stash apply'
 alias gss='git stash show -p'
 
-## stash pop (fzf select)
-gspf() {
-  local entry
-  entry=$(git stash list \
-    | fzf --prompt='pop stash> ' --height=40% --reverse)
-  [[ -z "$entry" ]] && return 1
-  git stash pop "$@" "${entry%%:*}"
-}
-
-## stash drop (fzf select)
-gsdf() {
-  local entry
-  entry=$(git stash list \
-    | fzf --prompt='drop stash> ' --height=40% --reverse)
-  [[ -z "$entry" ]] && return 1
-  git stash drop "$@" "${entry%%:*}"
-}
+## stash pop/drop (fzf select)
+gspf() { __git_stash_fzf pop  'pop stash> '  "$@"; }
+gsdf() { __git_stash_fzf drop 'drop stash> ' "$@"; }
 
 # commits
 alias gc='git commit'
@@ -168,26 +174,10 @@ alias gcan='git commit --amend --no-edit'
 # merging
 alias gm='git merge'
 alias gms='git merge --squash'
-## merge --no-edit (inline or fzf select)
-gmn() {
-  if [[ -n "$1" ]]; then
-    git merge --no-edit "$@"
-  else
-    local branch
-    branch=$(__git_branch_list | fzf --prompt='merge> ' --height=40% --reverse)
-    [[ -n "$branch" ]] && git merge --no-edit "$branch"
-  fi
-}
-## merge branch (inline or fzf select)
-gmb() {
-  if [[ -n "$1" ]]; then
-    git merge "$1"
-  else
-    local branch
-    branch=$(__git_branch_list | fzf --prompt='merge> ' --height=40% --reverse)
-    [[ -n "$branch" ]] && git merge "$branch"
-  fi
-}
+## merge (inline or fzf select)
+gmn() { __git_fzf_branch  'merge --no-edit' 'merge> ' "$@"; }
+gmb() { __git_fzf_branch  'merge'           'merge> ' "$@"; }
+gmbs() { __git_fzf_branch 'merge --squash'  'squash merge> ' "$@"; }
 
 alias gmo='git merge -X ours'
 alias gmt='git merge -X theirs'
@@ -218,15 +208,7 @@ gdaw() {
 }
 
 ## diff branch (inline or fzf select)
-gdb() {
-  if [[ -n "$1" ]]; then
-    git diff "$@"
-  else
-    local branch
-    branch=$(__git_branch_list | fzf --prompt='diff branch> ' --height=40% --reverse)
-    [[ -n "$branch" ]] && git diff "$branch"
-  fi
-}
+gdb() { __git_fzf_branch diff 'diff branch> ' "$@"; }
 
 ## diff main/master (autodetect)
 gdm() { git diff "$(__git_default_branch)"; }
@@ -241,26 +223,8 @@ alias gco='git checkout'
 alias gswc='git switch --create'
 
 ## switch branch (inline or fzf select)
-gsw() {
-  if [[ -n "$1" ]]; then
-    git switch "$1"
-  else
-    local branch
-    branch=$(__git_branch_list | fzf --prompt='switch> ' --height=40% --reverse)
-    [[ -n "$branch" ]] && git switch "$branch"
-  fi
-}
-
-## switch branch detached (inline or fzf select)
-gswd() {
-  if [[ -n "$1" ]]; then
-    git switch -d "$1"
-  else
-    local branch
-    branch=$(__git_branch_list | fzf --prompt='detach> ' --height=40% --reverse)
-    [[ -n "$branch" ]] && git switch -d "$branch"
-  fi
-}
+gsw()  { __git_fzf_branch switch      'switch> ' "$@"; }
+gswd() { __git_fzf_branch 'switch -d' 'detach> ' "$@"; }
 
 ## switch to main/master (autodetect)
 gswm() {
@@ -357,9 +321,11 @@ _gswd() { __git_complete_as switch }
 _gdb()  { __git_complete_as diff   }
 _gmb()  { __git_complete_as merge  }
 _gmn()  { __git_complete_as merge  }
+_gmbs() { __git_complete_as merge  }
 
 compdef _gsw  gsw
 compdef _gswd gswd
 compdef _gdb  gdb
 compdef _gmb  gmb
 compdef _gmn  gmn
+compdef _gmbs gmbs

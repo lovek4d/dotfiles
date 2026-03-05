@@ -1,3 +1,20 @@
+__cgt_worktree_dir() {
+  echo "$(dirname "$1")/$(basename "$1")-worktrees/$2"
+}
+
+__cgt_session() {
+  local root="$1" target="$2" local_branch="$3"
+  local session="${local_branch//\//-}"
+  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+
+  if [[ -n "$TMUX" ]]; then
+    tmux new-session -ds "$session" -c "$target" "$cmd"
+    tmux switch-client -t "$session"
+  else
+    tmux new-session -s "$session" -c "$target" "$cmd"
+  fi
+}
+
 c() {
   if [[ $# -gt 0 ]]; then
     claude "$@"
@@ -77,19 +94,6 @@ else
   alias cup='npm update -g @anthropic-ai/claude-code'
 fi
 
-__cgt_session() {
-  local root="$1" target="$2" local_branch="$3"
-  local session="${local_branch//\//-}"
-  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
-
-  if [[ -n "$TMUX" ]]; then
-    tmux new-session -ds "$session" -c "$target" "$cmd"
-    tmux switch-client -t "$session"
-  else
-    tmux new-session -s "$session" -c "$target" "$cmd"
-  fi
-}
-
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     cat <<'EOF'
@@ -130,8 +134,8 @@ EOF
     start_point="$branch"
   fi
 
-  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
-  local target="$base_dir/$local_branch"
+  local target="$(__cgt_worktree_dir "$root" "$local_branch")"
+  mkdir -p "$(dirname "$target")"
 
   # create worktree: reuse existing local branch, track remote, or new from default branch
   if git show-ref --verify --quiet "refs/heads/$local_branch"; then
@@ -140,8 +144,7 @@ EOF
     git worktree add -b "$local_branch" "$target" "$start_point"
   else
     git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
-  fi
-  [[ $? -ne 0 ]] && return 1
+  fi || return 1
 
   __cgt_session "$root" "$target" "$local_branch"
 }
@@ -173,11 +176,10 @@ EOF
   base=$(__git_branch_list | fzf --prompt='base branch> ' --height=40% --reverse)
   [[ -z "$base" ]] && return 1
 
-  local base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
-  local target="$base_dir/$local_branch"
+  local target="$(__cgt_worktree_dir "$root" "$local_branch")"
+  mkdir -p "$(dirname "$target")"
 
-  git worktree add -b "$local_branch" "$target" "$base"
-  [[ $? -ne 0 ]] && return 1
+  git worktree add -b "$local_branch" "$target" "$base" || return 1
 
   __cgt_session "$root" "$target" "$local_branch"
 }

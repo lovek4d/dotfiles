@@ -1,3 +1,11 @@
+__tmux_jump() {
+  if [[ -n "$TMUX" ]]; then
+    tmux switch-client -t "$1"
+  else
+    tmux attach -t "$1"
+  fi
+}
+
 tm() {
   if [[ $# -gt 0 ]]; then
     tmux "$@"
@@ -65,31 +73,19 @@ tmn() {
   if [[ -z "$1" ]]; then
     echo "usage: tmn <name>" && return 1
   fi
-  if [[ -n "$TMUX" ]]; then
-    tmux new-session -ds "$1" && tmux switch-client -t "$1"
-  else
-    tmux new-session -s "$1"
-  fi
+  tmux new-session -ds "$1" && __tmux_jump "$1"
 }
 
 ## switch session (inline or fzf select)
 tms() {
   if [[ -n "$1" ]]; then
-    if [[ -n "$TMUX" ]]; then
-      tmux switch-client -t "$1"
-    else
-      tmux attach -t "$1"
-    fi
+    __tmux_jump "$1"
   else
     local session
     session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
       | fzf --prompt='switch session> ' --height=40% --reverse)
     [[ -z "$session" ]] && return 1
-    if [[ -n "$TMUX" ]]; then
-      tmux switch-client -t "$session"
-    else
-      tmux attach -t "$session"
-    fi
+    __tmux_jump "$session"
   fi
 }
 

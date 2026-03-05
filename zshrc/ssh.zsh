@@ -1,3 +1,8 @@
+__ssh_show_pubkey() {
+  clipcopy < "${1}.pub" 2>/dev/null && echo "public key copied to clipboard" \
+    || echo "public key:\n$(cat "${1}.pub")"
+}
+
 # auto-load ssh key into agent
 if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
   ssh-add -l &>/dev/null || ssh-add ~/.ssh/id_ed25519 2>/dev/null
@@ -12,10 +17,8 @@ ssh aliases:
     s <args>      ssh (passthrough)
     ss [host]     fzf host picker from ~/.ssh/config
   keys
-    skey          generate ed25519 key + copy pubkey
+    sinit [email] generate key + add to agent + copy pubkey
     scid <host>   copy public key to remote host for passwordless login
-  setup
-    sinit         generate key + add to agent + copy pubkey
 EOF
     return 0
   fi
@@ -33,38 +36,24 @@ ss() {
   ssh "$host"
 }
 
-# generate ed25519 key + copy pubkey
-skey() {
-  local email="${1:-$(git config user.email)}"
-  [[ -z "$email" ]] && echo "usage: skey <email>" && return 1
-  local keyfile="$HOME/.ssh/id_ed25519"
-  if [[ -f "$keyfile" ]]; then
-    echo "key already exists: $keyfile"
-    clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
-      || echo "public key:\n$(cat "${keyfile}.pub")"
-    return 0
-  fi
-  ssh-keygen -t ed25519 -C "$email" -f "$keyfile" || return 1
-  clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
-    || echo "public key:\n$(cat "${keyfile}.pub")"
-}
-
 # copy public key to remote host (passwordless login)
 scid() {
   [[ -z "$1" ]] && echo "usage: scid <host>" && return 1
   ssh-copy-id "$1"
 }
 
-# bootstrap: generate key + add to agent + copy pubkey
+# generate key + add to agent + copy pubkey
 sinit() {
+  local comment="${1:-$(whoami)@$(hostname -s)}"
   local keyfile="$HOME/.ssh/id_ed25519"
   mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-  if [[ ! -f "$keyfile" ]]; then
+  if [[ -f "$keyfile" ]]; then
+    echo "ssh key already exists: $keyfile"
+  else
     echo "generating ssh key (no passphrase)..."
-    ssh-keygen -t ed25519 -C "$(whoami)@$(hostname -s)" -f "$keyfile" -N "" || return 1
+    ssh-keygen -t ed25519 -C "$comment" -f "$keyfile" -N "" || return 1
   fi
   ssh-add "$keyfile" 2>/dev/null
-  clipcopy < "${keyfile}.pub" 2>/dev/null && echo "public key copied to clipboard" \
-    || echo "public key:\n$(cat "${keyfile}.pub")"
+  __ssh_show_pubkey "$keyfile"
   echo "add to GitHub: https://github.com/settings/ssh/new"
 }
