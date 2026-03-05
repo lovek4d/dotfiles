@@ -126,7 +126,7 @@ _zinit_linux() {
   sudo apt install -y "$@"
 
   # nvm via install script
-  if [[ ! -d "$HOME/.nvm" ]]; then
+  if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
     echo "=== installing nvm ==="
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   fi
