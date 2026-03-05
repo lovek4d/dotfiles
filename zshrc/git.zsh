@@ -12,6 +12,30 @@ __git_default_branch() {
   echo "${b:-main}"
 }
 
+# setup
+ginit() {
+  local name email changed=0
+  name="$(git config --global user.name)"
+  email="$(git config --global user.email)"
+  if [[ -z "$name" ]]; then
+    printf "name: " && read -r name
+    [[ -z "$name" ]] && echo "name required" && return 1
+    git config --global user.name "$name"
+    changed=1
+  fi
+  if [[ -z "$email" ]]; then
+    printf "email: " && read -r email
+    [[ -z "$email" ]] && echo "email required" && return 1
+    git config --global user.email "$email"
+    changed=1
+  fi
+  if (( changed )); then
+    echo "git config set for $name <$email>"
+  else
+    echo "git config already set for $name <$email>"
+  fi
+}
+
 # core
 g() {
   if [[ $# -gt 0 ]]; then
@@ -85,6 +109,8 @@ git aliases:
     gwl    git worktree list
     gwp    git worktree prune
     gws    cd to worktree (fzf)
+  setup
+    ginit  set git user.name + user.email
 EOF
 }
 alias ga='git add'

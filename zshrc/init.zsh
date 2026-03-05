@@ -82,6 +82,9 @@ zinit() {
     echo "unsupported platform: $OSTYPE" && return 1
   fi
 
+  echo "=== git ==="
+  ginit
+
   echo "=== tmux ==="
   tminit
 
