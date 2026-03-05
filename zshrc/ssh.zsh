@@ -15,7 +15,7 @@ s() {
 ssh aliases:
   connect
     s <args>      ssh (passthrough)
-    ss [host]     fzf host picker from ~/.ssh/config
+    sc [host]     fzf host picker from ~/.ssh/config
   keys
     sinit [email] generate key + add to agent + copy pubkey
     scid <host>   copy public key to remote host for passwordless login
@@ -26,7 +26,7 @@ EOF
 }
 
 # fzf host picker from ~/.ssh/config
-ss() {
+sc() {
   if [[ -n "$1" ]]; then
     ssh "$1"
     return
