@@ -14,7 +14,6 @@ ssh aliases:
   keys
     skey          generate ed25519 key + copy pubkey
     scid <host>   copy public key to remote host for passwordless login
-    sagent        start ssh-agent + add default key
   setup
     sinit         generate key + add to agent + copy pubkey
 EOF
@@ -54,14 +53,6 @@ skey() {
 scid() {
   [[ -z "$1" ]] && echo "usage: scid <host>" && return 1
   ssh-copy-id "$1"
-}
-
-# start ssh-agent if not running, add default key
-sagent() {
-  if [[ -z "$SSH_AUTH_SOCK" ]] || ! ssh-add -l &>/dev/null; then
-    eval "$(ssh-agent -s)"
-  fi
-  ssh-add ~/.ssh/id_ed25519 2>/dev/null || ssh-add
 }
 
 # bootstrap: generate key + add to agent + copy pubkey
