@@ -9,13 +9,14 @@ s() {
     cat <<'EOF'
 ssh aliases:
   connect
-    s <args>   ssh (passthrough)
-    ss [host]  fzf host picker from ~/.ssh/config
+    s <args>      ssh (passthrough)
+    ss [host]     fzf host picker from ~/.ssh/config
   keys
-    skey       generate ed25519 key + copy pubkey
-    sagent     start ssh-agent + add default key
+    skey          generate ed25519 key + copy pubkey
+    scid <host>   copy public key to remote host for passwordless login
+    sagent        start ssh-agent + add default key
   setup
-    sinit      generate key + add to agent + copy pubkey
+    sinit         generate key + add to agent + copy pubkey
 EOF
     return 0
   fi
@@ -47,6 +48,12 @@ skey() {
   ssh-keygen -t ed25519 -C "$email" -f "$keyfile" || return 1
   clipcopy < "${keyfile}.pub"
   echo "public key copied to clipboard"
+}
+
+# copy public key to remote host (passwordless login)
+scid() {
+  [[ -z "$1" ]] && echo "usage: scid <host>" && return 1
+  ssh-copy-id "$1"
 }
 
 # start ssh-agent if not running, add default key
