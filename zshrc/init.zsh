@@ -81,9 +81,6 @@ zinit() {
     echo "unsupported platform: $OSTYPE" && return 1
   fi
 
-  mkdir -p "$HOME/.nvm"
-  echo "created ~/.nvm"
-
   echo "=== tmux ==="
   tminit
 
@@ -126,13 +123,14 @@ _zinit_linux() {
   sudo apt install -y "$@"
 
   # nvm via install script
+  export NVM_DIR="$HOME/.nvm"
+  mkdir -p "$NVM_DIR"
   if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
     echo "=== installing nvm ==="
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   fi
 
   # load nvm + install node
-  export NVM_DIR="$HOME/.nvm"
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   if ! command -v node >/dev/null 2>&1; then
     echo "=== installing node via nvm ==="
