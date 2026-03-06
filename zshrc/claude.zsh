@@ -3,14 +3,20 @@ __cgt_worktree_dir() {
 }
 
 __cgt_session() {
-  local root="$1" target="$2" local_branch="$3"
+  local root="$1" target="$2" local_branch="$3" message="$4"
   local session="${local_branch//\//-}"
-  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+  local cleanup="cd '${root}' && git worktree remove '${target}'"
 
-  if [[ -n "$TMUX" ]]; then
+  if [[ -n "$message" ]]; then
+    local cmd="claude --permission-mode plan ${(q)message}; ${cleanup}"
+    tmux new-session -ds "$session" -c "$target" "$cmd"
+    echo "backgrounded: $session (plan mode)"
+  elif [[ -n "$TMUX" ]]; then
+    local cmd="claude; ${cleanup}"
     tmux new-session -ds "$session" -c "$target" "$cmd"
     tmux switch-client -t "$session"
   else
+    local cmd="claude; ${cleanup}"
     tmux new-session -s "$session" -c "$target" "$cmd"
   fi
 }
@@ -31,8 +37,8 @@ claude aliases:
     cqo    claude --print --model opus
     cqs    claude --print --model sonnet
   workflow
-    cgt    worktree + tmux + claude (new branches from default)
-    cgtb   worktree from fzf-selected base branch
+    cgt    worktree + tmux + claude (+ inline message → background)
+    cgtb   worktree from fzf-selected base (+ inline message)
     cgtd   destroy worktree + tmux session
     cup    upgrade claude-code
   queue
@@ -99,7 +105,7 @@ cgt() {
     cat <<'EOF'
 cgt — create a worktree + tmux session + launch claude code
 
-usage: cgt [branch-name]
+usage: cgt [branch-name] [message]
 
   If branch-name is given, creates (or reuses) that branch.
   New branches start from the default branch (main/master).
@@ -107,6 +113,10 @@ usage: cgt [branch-name]
 
   Creates a git worktree, opens a tmux session named after
   the branch, and starts claude code inside it.
+
+  If message is given, sends it to claude in plan mode and
+  backgrounds the tmux session. Queue hooks notify on status
+  changes. Use cw/cwf to monitor.
 
   On exit, the worktree is automatically removed (unless dirty).
   Use cgtd to manually tear down a worktree + tmux session.
@@ -146,7 +156,7 @@ EOF
     git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
   fi || return 1
 
-  __cgt_session "$root" "$target" "$local_branch"
+  __cgt_session "$root" "$target" "$local_branch" "$2"
 }
 
 cgtb() {
@@ -154,10 +164,13 @@ cgtb() {
     cat <<'EOF'
 cgtb — worktree + tmux + claude from a specific base branch
 
-usage: cgtb <new-branch>
+usage: cgtb <new-branch> [message]
 
   Creates a new branch from an fzf-selected base branch.
   Otherwise identical to cgt.
+
+  If message is given, sends it to claude in plan mode and
+  backgrounds the session (see cgt --help).
 EOF
     return 0
   fi
@@ -181,7 +194,7 @@ EOF
 
   git worktree add -b "$local_branch" "$target" "$base" || return 1
 
-  __cgt_session "$root" "$target" "$local_branch"
+  __cgt_session "$root" "$target" "$local_branch" "$2"
 }
 
 cgtd() {
