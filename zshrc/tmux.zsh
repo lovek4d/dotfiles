@@ -126,26 +126,3 @@ tmk() {
     tmux kill-session -t "$session"
   fi
 }
-
-## claude queue: keybindings + status bar
-if [[ -n "$TMUX" ]]; then
-  # ctrl+b ctrl+q → popup with waiting sessions (4-bucket priority)
-  tmux bind-key C-q popup -E -w 60 -h 20 \
-    'D=~/.claude/queue; p=""; i=""; t=""; s=""; for f in "$D"/*; do [ -f "$f" ] || continue; n="${f##*/}"; tmux has-session -t "$n" 2>/dev/null || continue; read x < "$f"; case "$x" in prompt) p="$p[prompt]   $n
-";; thinking) t="$t[thinking] $n
-";; paused) s="$s[paused]   $n
-";; *) i="$i[idle]     $n
-";; esac; done; printf "%s%s%s%s" "$p" "$i" "$t" "$s" | fzf --prompt="queue> " --reverse | sed "s/^\[[a-z]*\] *//" | xargs -I{} tmux switch-client -t {}'
-
-  # ctrl+b ctrl+w → demote current session to paused
-  tmux bind-key C-w run-shell \
-    'S=$(tmux display-message -p "#{session_name}"); f="$HOME/.claude/queue/$S"; if [ -f "$f" ]; then read t < "$f"; case "$t" in paused) tmux display-message "already paused: $S";; *) echo paused > "$f"; tmux display-message "paused: $S (was $t)";; esac; else tmux display-message "not in queue: $S"; fi'
-
-  # status bar: wider left to avoid truncating cgt session names
-  tmux set-option -g status-left-length 60
-
-  # status bar: show P:N I:N T:N S:N (non-zero only)
-  tmux set-option -g status-interval 2
-  tmux set-option -g status-right \
-    '#(D=$HOME/.claude/queue; p=0; i=0; t=0; s=0; for f in "$D"/*; do [ -f "$f" ] || continue; n="${f##*/}"; tmux has-session -t "$n" 2>/dev/null || continue; read x < "$f"; case "$x" in prompt) p=$((p+1));; thinking) t=$((t+1));; paused) s=$((s+1));; *) i=$((i+1));; esac; done; [ $p -gt 0 ] && printf "P:%d " $p; [ $i -gt 0 ] && printf "I:%d " $i; [ $t -gt 0 ] && printf "T:%d " $t; [ $s -gt 0 ] && printf "S:%d " $s) %H:%M'
-fi
