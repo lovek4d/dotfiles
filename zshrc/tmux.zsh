@@ -141,6 +141,10 @@ if [[ -n "$TMUX" ]]; then
   tmux bind-key C-w run-shell \
     'S=$(tmux display-message -p "#{session_name}"); f="$HOME/.claude/queue/$S"; if [ -f "$f" ]; then read t < "$f"; case "$t" in paused) tmux display-message "already paused: $S";; *) echo paused > "$f"; tmux display-message "paused: $S (was $t)";; esac; else tmux display-message "not in queue: $S"; fi'
 
+  # status bar: show session name + git branch
+  tmux set-option -g status-left \
+    '#[fg=green]#S #[default]#(cd "#{pane_current_path}" && git branch --show-current 2>/dev/null | sed "s/.*/ [&]/") '
+
   # status bar: show P:N I:N T:N S:N (non-zero only)
   tmux set-option -g status-interval 2
   tmux set-option -g status-right \
