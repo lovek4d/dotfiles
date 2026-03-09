@@ -44,8 +44,8 @@ tmux aliases:
     z      zoom pane
 
   status bar
-    P:N    prompt (needs input)   S:N  shelved/paused
-    I:N    idle (results ready)   T:N  thinking (working)
+    Prompt:N    needs input        Paused:N   shelved/paused
+    Idle:N      results ready      Thinking:N working
 
   settings
     tminit  symlink ~/.tmux.conf from repo
@@ -57,7 +57,7 @@ EOF
 tminit() {
   ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
   echo "symlinked ~/dev/dotfiles/configs/tmux.conf → ~/.tmux.conf"
-  [[ -n "$TMUX" ]] && tmux source-file ~/.tmux.conf && echo "config reloaded"
+  tmux source-file ~/.tmux.conf 2>/dev/null && echo "config reloaded"
 }
 
 # simple aliases
