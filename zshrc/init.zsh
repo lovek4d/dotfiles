@@ -120,7 +120,19 @@ _zinit_macos() {
   fi
 
   echo "=== brew packages ==="
-  brew install "$@" 2>&1 | grep -Ev "To reinstall|^  brew reinstall" | sed 's/^Warning: //'
+  local pkg missing=() installed
+  installed=$(brew list --formula -1)
+  for pkg in "$@"; do
+    if echo "$installed" | grep -qx "$pkg"; then
+      echo "$pkg already installed"
+    else
+      missing+=("$pkg")
+    fi
+  done
+  if (( ${#missing[@]} )); then
+    echo "installing ${missing[*]}..."
+    brew install "${missing[@]}"
+  fi
   brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 }
 
