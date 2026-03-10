@@ -128,6 +128,7 @@ git aliases:
     gswm   switch to main
   worktrees
     gwa    add worktree (fzf)
+    gwc    create worktree + branch
     gwd    rm worktree (fzf)
     gwl    git worktree list
     gwp    git worktree prune
@@ -266,17 +267,29 @@ gpla() {
 alias gwl='git worktree list'
 alias gwp='git worktree prune'
 
+__git_worktree_path() {
+  local root
+  root="$(git rev-parse --show-toplevel)"
+  echo "$(dirname "$root")/$(basename "$root")-worktrees/$1"
+}
+
+## create worktree with new branch
+gwc() {
+  [[ -z "$1" ]] && echo "usage: gwc <branch>" && return 1
+  local branch="$1"; shift
+  local target="$(__git_worktree_path "$branch")"
+  mkdir -p "$(dirname "$target")"
+  git worktree add "$@" "$target" -b "$branch"
+  echo "Worktree at: $target"
+}
+
 ## add worktree for existing branch (fzf select)
 gwa() {
   local branch
   branch=$(git branch --format='%(refname:short)' \
     | fzf --prompt='worktree branch> ' --height=40% --reverse)
   [[ -z "$branch" ]] && return 1
-  local root
-  root="$(git rev-parse --show-toplevel)"
-  local base_dir
-  base_dir="$(dirname "$root")/$(basename "$root")-worktrees"
-  local target="$base_dir/$branch"
+  local target="$(__git_worktree_path "$branch")"
   mkdir -p "$(dirname "$target")"
   git worktree add "$@" "$target" "$branch"
   echo "Worktree at: $target"
