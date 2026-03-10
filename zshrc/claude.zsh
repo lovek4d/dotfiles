@@ -300,6 +300,9 @@ cwf() {
   done
 }
 
+_cgt() { __git_complete_as switch }
+compdef _cgt cgt
+
 cwd() {
   [[ -z "$TMUX" ]] && echo "cwd must be run inside a tmux session" && return 1
   local session
