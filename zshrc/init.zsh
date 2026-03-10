@@ -120,19 +120,31 @@ _zinit_macos() {
   fi
 
   echo "=== brew packages ==="
-  local pkg missing=() installed
+  local pkg missing=() outdated=() installed outdated_list
   installed=$(brew list --formula -1)
+  outdated_list=$(brew outdated --formula -1 2>/dev/null)
   for pkg in "$@"; do
     if echo "$installed" | grep -qx "$pkg"; then
-      echo "$pkg already installed"
+      if echo "$outdated_list" | grep -qx "$pkg"; then
+        outdated+=("$pkg")
+      else
+        echo "$pkg up to date"
+      fi
     else
       missing+=("$pkg")
     fi
   done
-  if (( ${#missing[@]} )); then
-    echo "installing ${missing[*]}..."
-    brew install "${missing[@]}"
-  fi
+  local i=1 total=$(( ${#missing[@]} + ${#outdated[@]} ))
+  for pkg in "${missing[@]}"; do
+    echo "installing $pkg ($i/$total)..."
+    brew install "$pkg"
+    ((i++))
+  done
+  for pkg in "${outdated[@]}"; do
+    echo "upgrading $pkg ($i/$total)..."
+    brew upgrade "$pkg"
+    ((i++))
+  done
   brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 }
 
