@@ -9,6 +9,7 @@
   - Stash + switch: `git stash && git switch <branch>` or `git switch <branch> && git stash pop`
   - Stash + checkout: `git stash && git checkout <branch>` or `git checkout <branch> && git stash pop`
   - Checkout workflows: `git checkout -b <branch> && git push -u origin <branch>`
+- **Commit and PR descriptions must be based on the actual diff and branch history** (from `git diff`, `git log`, `git status`), not the conversation context. Read the code changes first, then write the description.
 - **Never push unless explicitly asked** to create a PR or push.
 - **When asked to create a PR**, group all commands into minimal Bash calls:
   - `git add <files> && git commit -m "..." && git push -u origin <branch>` then `gh pr create ...`
