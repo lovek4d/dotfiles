@@ -19,7 +19,7 @@ local function transcribe()
     os.remove(TMPRAW)
     local whisperTask = hs.task.new("/opt/homebrew/bin/whisper-cli", function(_, stdout, _)
       os.remove(TMPFILE)
-      local result = stdout:gsub("%[BLANK_AUDIO%]", ""):gsub("\n", " "):gsub("^%s+", ""):gsub("%s+$", "")
+      local result = stdout:gsub("%[BLANK_AUDIO%]", ""):gsub("\n", " "):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
       if result ~= "" then
         hs.pasteboard.setContents(result)
         notify("Transcription copied to clipboard:\n" .. result)
