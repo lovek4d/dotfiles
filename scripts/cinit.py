@@ -30,7 +30,7 @@ settings["hooks"] = {
 }
 
 readonly_perms = [
-    # git read-only
+    # version control — git
     "Bash(git diff:*)",
     "Bash(git log:*)",
     "Bash(git status:*)",
@@ -38,7 +38,7 @@ readonly_perms = [
     "Bash(git branch:*)",
     "Bash(git remote:*)",
     "Bash(git rev-parse:*)",
-    # gh read-only
+    # version control — github cli
     "Bash(gh pr view:*)",
     "Bash(gh pr list:*)",
     "Bash(gh pr checks:*)",
@@ -52,16 +52,24 @@ readonly_perms = [
     "Bash(gh release view:*)",
     "Bash(gh release list:*)",
     "Bash(gh auth status:*)",
-    # bash read-only
+    "Bash(gh search:*)",
+    "Bash(gh status:*)",
+    # file inspection
     "Bash(cat:*)",
     "Bash(head:*)",
     "Bash(tail:*)",
     "Bash(ls:*)",
     "Bash(find:*)",
+    "Bash(file:*)",
+    "Bash(stat:*)",
+    "Bash(readlink:*)",
+    "Bash(realpath:*)",
+    "Bash(basename:*)",
+    "Bash(dirname:*)",
+    # text processing
     "Bash(grep:*)",
     "Bash(rg:*)",
-    "Bash(wc:*)",
-    "Bash(echo:*)",
+    "Bash(jq:*)",
     "Bash(sed:*)",
     "Bash(awk:*)",
     "Bash(sort:*)",
@@ -69,20 +77,39 @@ readonly_perms = [
     "Bash(cut:*)",
     "Bash(tr:*)",
     "Bash(diff:*)",
-    "Bash(which:*)",
-    "Bash(type:*)",
+    "Bash(wc:*)",
+    # system info
     "Bash(env:*)",
     "Bash(printenv:*)",
     "Bash(pwd:*)",
     "Bash(ps:*)",
     "Bash(du:*)",
     "Bash(df:*)",
+    "Bash(date:*)",
+    "Bash(uname:*)",
+    "Bash(whoami:*)",
+    "Bash(id:*)",
+    "Bash(hostname:*)",
+    "Bash(which:*)",
+    "Bash(type:*)",
+    # shell builtins
+    "Bash(echo:*)",
+    "Bash(test:*)",
 ]
+denied_perms = [
+    "Bash(sed -i:*)",
+    "Bash(sed --in-place:*)",
+]
+
 perms = settings.setdefault("permissions", {})
 allow = perms.setdefault("allow", [])
 for p in readonly_perms:
     if p not in allow:
         allow.append(p)
+deny = perms.setdefault("deny", [])
+for p in denied_perms:
+    if p not in deny:
+        deny.append(p)
 
 with open(path, "w") as f:
     json.dump(settings, f, indent=2)

@@ -29,6 +29,12 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - **Platform abstraction**: Use `clipcopy`/`clippaste` instead of `pbcopy`/`pbpaste`, and `__notify` instead of `osascript`. Platform helpers live in `zshrc/platform.zsh`.
 - **Zoxide navigation**: `j`/`ji` for directory jumping (uses `--cmd j` to avoid conflict with `z` help function).
 
+## Tool Preferences
+
+- Prefer the **Edit tool** over `sed` for file modifications.
+- Prefer the **Read tool** over `cat`/`head`/`tail` for reading files.
+- Prefer the **Write tool** over `echo`/`cat` redirection for creating files.
+
 ## Queue System
 
 File-based state in `~/.claude/queue/` tracks Claude Code session status across tmux sessions. Four priority levels: `prompt` > `idle` > `thinking` > `paused`. Hooks are written to `~/.claude/settings.json` by `cinit`. The tmux status bar shows counts (P/I/T/S) and `cwf` auto-focuses the highest-priority session.
