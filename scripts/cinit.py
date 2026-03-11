@@ -29,7 +29,8 @@ settings["hooks"] = {
     "SessionEnd":      [{"hooks": [{"type": "command", "command": dequeue,                     "timeout": 5}]}],
 }
 
-git_perms = [
+readonly_perms = [
+    # git read-only
     "Bash(git diff:*)",
     "Bash(git log:*)",
     "Bash(git status:*)",
@@ -37,10 +38,49 @@ git_perms = [
     "Bash(git branch:*)",
     "Bash(git remote:*)",
     "Bash(git rev-parse:*)",
+    # gh read-only
+    "Bash(gh pr view:*)",
+    "Bash(gh pr list:*)",
+    "Bash(gh pr checks:*)",
+    "Bash(gh pr diff:*)",
+    "Bash(gh pr status:*)",
+    "Bash(gh issue view:*)",
+    "Bash(gh issue list:*)",
+    "Bash(gh run view:*)",
+    "Bash(gh run list:*)",
+    "Bash(gh repo view:*)",
+    "Bash(gh release view:*)",
+    "Bash(gh release list:*)",
+    "Bash(gh auth status:*)",
+    # bash read-only
+    "Bash(cat:*)",
+    "Bash(head:*)",
+    "Bash(tail:*)",
+    "Bash(ls:*)",
+    "Bash(find:*)",
+    "Bash(grep:*)",
+    "Bash(rg:*)",
+    "Bash(wc:*)",
+    "Bash(echo:*)",
+    "Bash(sed:*)",
+    "Bash(awk:*)",
+    "Bash(sort:*)",
+    "Bash(uniq:*)",
+    "Bash(cut:*)",
+    "Bash(tr:*)",
+    "Bash(diff:*)",
+    "Bash(which:*)",
+    "Bash(type:*)",
+    "Bash(env:*)",
+    "Bash(printenv:*)",
+    "Bash(pwd:*)",
+    "Bash(ps:*)",
+    "Bash(du:*)",
+    "Bash(df:*)",
 ]
 perms = settings.setdefault("permissions", {})
 allow = perms.setdefault("allow", [])
-for p in git_perms:
+for p in readonly_perms:
     if p not in allow:
         allow.append(p)
 
