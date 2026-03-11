@@ -29,9 +29,12 @@ REC_PID=$!
       | grep -v '\[BLANK_AUDIO\]' | grep -v '^[[:space:]]*$' \
       | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     if [[ -n "$preview" ]]; then
+      cols=$(tput cols 2>/dev/null || echo 80)
       tput cup 2 0
       tput ed
-      printf '%s' "$preview"
+      # cols - 2: fold -s can leave a trailing space that pushes the next word
+      # to a new line, so we need a 2-column margin on the terminal width
+      printf '%s' "$preview" | fold -s -w $(( cols - 2 ))
     fi
   done
 ) &
