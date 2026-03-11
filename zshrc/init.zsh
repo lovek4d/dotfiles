@@ -35,6 +35,7 @@ source $HOME/dev/dotfiles/zshrc/claude.zsh
 source $HOME/dev/dotfiles/zshrc/vim.zsh
 source $HOME/dev/dotfiles/zshrc/ssh.zsh
 source $HOME/dev/dotfiles/zshrc/docker.zsh
+source $HOME/dev/dotfiles/zshrc/whisper.zsh
 
 # general
 z() {
@@ -67,6 +68,7 @@ zshrc aliases:
     tm     tmux aliases
     ts     tailscale aliases
     v      vim aliases
+    w      whisper aliases
 EOF
 }
 
@@ -100,6 +102,7 @@ zinit() {
   cinit
 
   echo "=== done ==="
+  echo "run 'winit' for whisper voice transcription (opt-in)"
   source ~/.zshrc
 }
 
