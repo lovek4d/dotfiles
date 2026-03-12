@@ -9,12 +9,16 @@ TMPCHUNK="/tmp/whisper-chunk-raw.wav"
 TMPCHUNK16="/tmp/whisper-chunk-16k.wav"
 MODEL="$HOME/.whisper/models/ggml-large-v3-turbo.bin"
 PROMPT="Software engineering discussion."
+CLOSER_WORD="${WHISPER_CLOSER_WORD:-send it}"
+CLOSER_FLAG="/tmp/whisper-closer-flag"
+CLOSER_RESULT="/tmp/whisper-closer-result"
 
-trap 'kill -INT $REC_PID $POLL_PID 2>/dev/null; wait $REC_PID $POLL_PID 2>/dev/null; rm -f "$TMPRAW" "$TMPFILE" "$TMPCHUNK" "$TMPCHUNK16"' EXIT
+trap 'kill -INT $REC_PID $POLL_PID 2>/dev/null; wait $REC_PID $POLL_PID 2>/dev/null; rm -f "$TMPRAW" "$TMPFILE" "$TMPCHUNK" "$TMPCHUNK16" "$CLOSER_FLAG" "$CLOSER_RESULT"' EXIT
 
-echo "[Whisper] Enter > C/P | ESC > copy | ^C > quit"
+echo "[Whisper] Enter > C/P | ESC > copy | 'send it' > submit | ^C > quit"
 echo ""
 
+rm -f "$CLOSER_FLAG" "$CLOSER_RESULT"
 rec -q -c 1 "$TMPRAW" &
 REC_PID=$!
 
@@ -35,12 +39,32 @@ REC_PID=$!
       # cols - 2: fold -s can leave a trailing space that pushes the next word
       # to a new line, so we need a 2-column margin on the terminal width
       printf '%s' "$preview" | fold -s -w $(( cols - 2 ))
+      if echo "$preview" | grep -qiE "(^|[[:space:]])${CLOSER_WORD}([[:punct:]]*([[:space:]]|$))"; then
+        printf '%s' "$preview" \
+          | sed -E "s/(^|[[:space:]])${CLOSER_WORD}[[:punct:]]*([[:space:]]|$)/\1\2/gI" \
+          | sed -E 's/[[:space:]]+/ /g;s/^[[:space:]]*//;s/[[:space:]]*$//' \
+          > "$CLOSER_RESULT"
+        touch "$CLOSER_FLAG"
+        kill -INT "$REC_PID" 2>/dev/null
+        break
+      fi
     fi
   done
 ) &
 POLL_PID=$!
 
-read -r -s -n 1 key
+key=""
+closer_triggered=false
+while true; do
+  read -r -s -n 1 -t 1 key
+  if [[ $? -eq 0 ]]; then
+    break
+  fi
+  if [[ -f "$CLOSER_FLAG" ]]; then
+    closer_triggered=true
+    break
+  fi
+done
 
 # Drain trailing escape sequence bytes
 if [[ "$key" == $'\e' ]]; then
@@ -52,6 +76,25 @@ wait "$REC_PID" 2>/dev/null
 kill "$POLL_PID" 2>/dev/null
 wait "$POLL_PID" 2>/dev/null
 tput cup 2 0; tput ed
+
+if [[ "$closer_triggered" == true ]]; then
+  result=$(cat "$CLOSER_RESULT" 2>/dev/null)
+  if [[ -z "$result" ]]; then
+    echo "No speech detected."
+    exit 0
+  fi
+  echo "$result"
+  echo ""
+  if [[ -n "$TMUX" ]]; then
+    printf '%s' "$result" | clipcopy
+    tmux set-buffer "$result" && tmux paste-buffer 2>/dev/null
+    tmux send-keys Enter 2>/dev/null
+  else
+    printf '%s' "$result" | clipcopy
+    echo "Copied to clipboard."
+  fi
+  exit 0
+fi
 
 echo "Transcribing..."
 sox "$TMPRAW" -r 16000 -b 16 -e signed-integer "$TMPFILE" 2>/dev/null
