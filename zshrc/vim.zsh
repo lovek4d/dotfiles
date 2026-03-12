@@ -12,7 +12,7 @@ EOF
 }
 
 # ensure undo dir exists
-mkdir -p ~/.vim/undo
+[[ -d ~/.vim/undo ]] || mkdir -p ~/.vim/undo
 
 # point vim at repo-managed config
 export VIMINIT='source ~/dev/dotfiles/configs/vimrc'

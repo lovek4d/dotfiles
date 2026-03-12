@@ -214,13 +214,16 @@ alias sudo='sudo '
 alias python='python3'
 alias wdvenv='source .venv/bin/activate'
 
+# brew prefix (computed once, reused below)
+if __is_macos && command -v brew >/dev/null 2>&1; then
+  _BREW_PFX="$(brew --prefix)"
+fi
+
 # nvm + autocomplete
 export NVM_DIR="$HOME/.nvm"
-if __is_macos && command -v brew >/dev/null 2>&1; then
-  _brew_prefix="$(brew --prefix)"
-  [ -s "$_brew_prefix/opt/nvm/nvm.sh" ] && \. "$_brew_prefix/opt/nvm/nvm.sh"
-  [ -s "$_brew_prefix/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$_brew_prefix/opt/nvm/etc/bash_completion.d/nvm"
-  unset _brew_prefix
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  [ -s "$_BREW_PFX/opt/nvm/nvm.sh" ] && \. "$_BREW_PFX/opt/nvm/nvm.sh"
+  [ -s "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm"
 else
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
@@ -247,11 +250,9 @@ if command -v zoxide >/dev/null 2>&1; then
 fi
 
 # zsh plugins (syntax-highlighting must be last)
-if __is_macos && command -v brew >/dev/null 2>&1; then
-  _bp="$(brew --prefix)"
-  [ -s "$_bp/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_bp/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-  [ -s "$_bp/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_bp/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-  unset _bp
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  [ -s "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  [ -s "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 else
   [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
   [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -263,10 +264,10 @@ if command -v starship >/dev/null 2>&1; then
 fi
 
 # fzf key-bindings (ctrl+r history search)
-if __is_macos && command -v brew >/dev/null 2>&1; then
-  _fzf_keys="$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  _fzf_keys="$_BREW_PFX/opt/fzf/shell/key-bindings.zsh"
 elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
   _fzf_keys="/usr/share/doc/fzf/examples/key-bindings.zsh"
 fi
 [[ -n "$_fzf_keys" && -s "$_fzf_keys" ]] && source "$_fzf_keys"
-unset _fzf_keys
+unset _fzf_keys _BREW_PFX

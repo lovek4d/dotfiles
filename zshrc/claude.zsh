@@ -93,15 +93,7 @@ EOF
 
   # strip remote prefix (e.g. origin/foo → foo), or use explicit start point from $2
   local local_branch="$branch" start_point=""
-  if [[ -n "$2" ]]; then
-    start_point="$2"
-  else
-    local remote_prefix="${branch%%/*}"
-    if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" && ! git show-ref --verify --quiet "refs/heads/$branch"; then
-      local_branch="${branch#*/}"
-      start_point="$branch"
-    fi
-  fi
+  __git_normalize_branch "$branch" local_branch start_point "${2:-}"
 
   local target="$(__git_worktree_path "$local_branch" "$root")"
   mkdir -p "$(dirname "$target")"

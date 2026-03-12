@@ -32,7 +32,7 @@ __git_resolve_worktree() {
 __git_stash_fzf() {
   local action=$1 prompt=$2; shift 2
   local entry
-  entry=$(git stash list | fzf --prompt="$prompt" --height=40% --reverse)
+  entry=$(git stash list | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
   [[ -z "$entry" ]] && return 1
   git stash $action "$@" "${entry%%:*}"
 }
@@ -304,6 +304,23 @@ __git_worktree_for_branch() {
   '
 }
 
+## normalize remote branch: strips remote prefix into local_branch/start_point refs
+## usage: __git_normalize_branch <branch> <local_branch_varname> <start_point_varname> [explicit_start]
+__git_normalize_branch() {
+  local _branch="$1" _explicit="${4:-}"
+  typeset -n _lbref="$2" _spref="$3"
+  if [[ -n "$_explicit" ]]; then
+    _spref="$_explicit"
+  else
+    local _remote_prefix="${_branch%%/*}"
+    if [[ "$_branch" == */* ]] && git remote | grep -qx "$_remote_prefix" \
+        && ! git show-ref --verify --quiet "refs/heads/$_branch"; then
+      _lbref="${_branch#*/}"
+      _spref="$_branch"
+    fi
+  fi
+}
+
 ## create or reuse worktree (fzf select or branch arg)
 gwc() {
   local branch
@@ -315,12 +332,7 @@ gwc() {
   [[ -z "$branch" ]] && return 1
 
   local local_branch="$branch" start_point=""
-  local remote_prefix="${branch%%/*}"
-  if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" \
-      && ! git show-ref --verify --quiet "refs/heads/$branch"; then
-    local_branch="${branch#*/}"
-    start_point="$branch"
-  fi
+  __git_normalize_branch "$branch" local_branch start_point
 
   local target="$(__git_worktree_path "$local_branch")"
   mkdir -p "$(dirname "$target")"

@@ -1,5 +1,5 @@
 __ssh_show_pubkey() {
-  echo "public key:\n$(cat "${1}.pub")"
+  print "public key:\n$(cat "${1}.pub")"
 }
 
 # auto-load ssh key into agent
