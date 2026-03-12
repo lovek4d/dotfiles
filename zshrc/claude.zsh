@@ -1,7 +1,3 @@
-__cgt_worktree_dir() {
-  echo "$(dirname "$1")/$(basename "$1")-worktrees/$2"
-}
-
 __cgt_session() {
   local root="$1" target="$2" local_branch="$3"
   local session="${local_branch//\//-}"
@@ -91,29 +87,25 @@ EOF
   if [[ -n "$1" ]]; then
     branch="$1"
   else
-    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse --no-sort)
     [[ -z "$branch" ]] && return 1
   fi
 
-  # strip remote prefix (e.g. origin/foo → foo)
+  # strip remote prefix (e.g. origin/foo → foo), or use explicit start point from $2
   local local_branch="$branch" start_point=""
-  local remote_prefix="${branch%%/*}"
-  if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" && ! git show-ref --verify --quiet "refs/heads/$branch"; then
-    local_branch="${branch#*/}"
-    start_point="$branch"
+  if [[ -n "$2" ]]; then
+    start_point="$2"
+  else
+    local remote_prefix="${branch%%/*}"
+    if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" && ! git show-ref --verify --quiet "refs/heads/$branch"; then
+      local_branch="${branch#*/}"
+      start_point="$branch"
+    fi
   fi
 
-  local target="$(__cgt_worktree_dir "$root" "$local_branch")"
+  local target="$(__git_worktree_path "$local_branch" "$root")"
   mkdir -p "$(dirname "$target")"
-
-  # create worktree: reuse existing local branch, track remote, or new from default branch
-  if git show-ref --verify --quiet "refs/heads/$local_branch"; then
-    git worktree add "$target" "$local_branch"
-  elif [[ -n "$start_point" ]]; then
-    git worktree add -b "$local_branch" "$target" "$start_point"
-  else
-    git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
-  fi || return 1
+  __git_worktree_add "$local_branch" "$target" "$start_point" || return 1
 
   __cgt_session "$root" "$target" "$local_branch"
 }
@@ -131,9 +123,6 @@ EOF
     return 0
   fi
 
-  local root
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
-
   local local_branch="$1"
 
   if git show-ref --verify --quiet "refs/heads/$local_branch"; then
@@ -142,15 +131,10 @@ EOF
   fi
 
   local base
-  base=$(__git_branch_list | fzf --prompt='base branch> ' --height=40% --reverse)
+  base=$(__git_branch_list | fzf --prompt='base branch> ' --height=40% --reverse --no-sort)
   [[ -z "$base" ]] && return 1
 
-  local target="$(__cgt_worktree_dir "$root" "$local_branch")"
-  mkdir -p "$(dirname "$target")"
-
-  git worktree add -b "$local_branch" "$target" "$base" || return 1
-
-  __cgt_session "$root" "$target" "$local_branch"
+  cgt "$local_branch" "$base"
 }
 
 cgtd() {

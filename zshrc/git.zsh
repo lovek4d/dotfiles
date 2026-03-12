@@ -5,9 +5,28 @@ __git_fzf_branch() {
     git ${=cmd} "$@"
   else
     local branch
-    branch=$(__git_branch_list | fzf --prompt="$prompt" --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
     [[ -n "$branch" ]] && git ${=cmd} "$branch"
   fi
+}
+
+__git_fzf_local_branch() {
+  local prompt="$1"; shift
+  git branch --format='%(refname:short)' | sort \
+    | fzf --prompt="$prompt" --height=40% --reverse --no-sort "$@"
+}
+
+__git_resolve_worktree() {
+  local prompt="$1" branch="$2"
+  if [[ -z "$branch" ]]; then
+    branch=$(git worktree list --porcelain \
+      | awk '/^branch / {sub("refs/heads/", "", $2); print $2}' \
+      | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
+    [[ -z "$branch" ]] && return 1
+  fi
+  local wt="$(__git_worktree_for_branch "$branch")"
+  [[ -z "$wt" ]] && echo "no worktree for branch: $branch" >&2 && return 1
+  echo "$wt"
 }
 
 __git_stash_fzf() {
@@ -19,9 +38,10 @@ __git_stash_fzf() {
 }
 
 __git_branch_list() {
-  git branch --all --format='%(refname:short)' \
-    | sed 's#^remotes/##' \
-    | sort -u
+  {
+    git branch --format='%(refname:short)' | sort
+    git branch --remotes --format='%(refname:short)' | sort
+  } | awk '!seen[$0]++'
 }
 
 __git_default_branch() {
@@ -127,8 +147,7 @@ git aliases:
     gswd   switch branch detached (fzf)
     gswm   switch to main
   worktrees
-    gwa    add worktree (fzf)
-    gwc    create worktree + branch
+    gwc    create or reuse worktree (fzf)
     gwd    rm worktree (fzf)
     gwl    git worktree list
     gwp    git worktree prune
@@ -201,15 +220,7 @@ alias gdap='clippaste | git apply && echo "Applied diff from clipboard"'
 
 ## apply diff from worktree (fzf select or branch arg)
 gdaw() {
-  local wt
-  if [[ -n "$1" ]]; then
-    wt="$(__git_worktree_for_branch "$1")"
-    [[ -z "$wt" ]] && echo "no worktree for branch: $1" && return 1
-  else
-    wt=$(git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' \
-      | fzf --prompt='apply from worktree> ' --height=40% --reverse)
-  fi
-  [[ -n "$wt" ]] || return
+  local wt="$(__git_resolve_worktree 'apply from worktree> ' "$1")" || return
   git -C "$wt" diff | git apply && echo "Applied diff from $wt"
 }
 
@@ -240,20 +251,18 @@ gswm() {
 ## swap branch with stash (fzf select)
 gswap() {
   local branch
-  branch=$(git branch --format='%(refname:short)' \
-    | fzf --prompt='swap to> ' --height=40% --reverse)
+  branch=$(__git_branch_list | fzf --prompt='swap to> ' --height=40% --reverse --no-sort)
   [[ -z "$branch" ]] && return 1
   git stash -m "switch staging" && git switch "$branch" && git stash pop
 }
 
 ## delete branches by pattern, or fzf select
 gdl() {
-  if [ -n "$1" ]; then
+  if [[ -n "$1" ]]; then
     git branch | grep -E "$1" | sed 's/^\*//' | xargs -n1 git branch -D
   else
     local branches
-    branches=$(git branch --format='%(refname:short)' \
-      | fzf --multi --prompt='delete branch> ' --height=40% --reverse)
+    branches=$(__git_fzf_local_branch 'delete branch> ' --multi)
     [[ -z "$branches" ]] && return 1
     echo "$branches" | xargs -n1 git branch -D --
   fi
@@ -273,9 +282,19 @@ alias gwl='git worktree list'
 alias gwp='git worktree prune'
 
 __git_worktree_path() {
-  local root
-  root="$(git rev-parse --show-toplevel)"
-  echo "$(dirname "$root")/$(basename "$root")-worktrees/$1"
+  local branch="$1" root="${2:-$(git rev-parse --show-toplevel)}"
+  echo "$(dirname "$root")/$(basename "$root")-worktrees/$branch"
+}
+
+__git_worktree_add() {
+  local local_branch="$1" target="$2" start_point="$3"
+  if git show-ref --verify --quiet "refs/heads/$local_branch"; then
+    git worktree add "$target" "$local_branch"
+  elif [[ -n "$start_point" ]]; then
+    git worktree add -b "$local_branch" "$target" "$start_point"
+  else
+    git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
+  fi
 }
 
 __git_worktree_for_branch() {
@@ -285,58 +304,39 @@ __git_worktree_for_branch() {
   '
 }
 
-## create worktree with new branch
+## create or reuse worktree (fzf select or branch arg)
 gwc() {
-  [[ -z "$1" ]] && echo "usage: gwc <branch>" && return 1
-  local branch="$1"; shift
-  local target="$(__git_worktree_path "$branch")"
-  mkdir -p "$(dirname "$target")"
-  git worktree add "$@" "$target" -b "$branch"
-  echo "Worktree at: $target"
-}
-
-## add worktree for existing branch (fzf select or branch arg)
-gwa() {
   local branch
   if [[ -n "$1" ]]; then
     branch="$1"
   else
-    branch=$(git branch --format='%(refname:short)' \
-      | fzf --prompt='worktree branch> ' --height=40% --reverse)
+    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse --no-sort)
   fi
   [[ -z "$branch" ]] && return 1
-  local target="$(__git_worktree_path "$branch")"
+
+  local local_branch="$branch" start_point=""
+  local remote_prefix="${branch%%/*}"
+  if [[ "$branch" == */* ]] && git remote | grep -qx "$remote_prefix" \
+      && ! git show-ref --verify --quiet "refs/heads/$branch"; then
+    local_branch="${branch#*/}"
+    start_point="$branch"
+  fi
+
+  local target="$(__git_worktree_path "$local_branch")"
   mkdir -p "$(dirname "$target")"
-  git worktree add "$target" "$branch"
+  __git_worktree_add "$local_branch" "$target" "$start_point" || return 1
   echo "Worktree at: $target"
 }
 
 ## cd to worktree (fzf select or branch arg)
 gws() {
-  local selected
-  if [[ -n "$1" ]]; then
-    selected="$(__git_worktree_for_branch "$1")"
-    [[ -z "$selected" ]] && echo "no worktree for branch: $1" && return 1
-  else
-    selected=$(git worktree list --porcelain \
-      | grep '^worktree ' \
-      | sed 's/^worktree //' \
-      | fzf --prompt='worktree> ' --height=40% --reverse)
-  fi
+  local selected="$(__git_resolve_worktree 'worktree> ' "$1")" || return
   [[ -n "$selected" ]] && cd "$selected"
 }
 
 ## remove worktree (fzf select or branch arg)
 gwd() {
-  local selected
-  if [[ -n "$1" ]]; then
-    selected="$(__git_worktree_for_branch "$1")"
-    [[ -z "$selected" ]] && echo "no worktree for branch: $1" && return 1
-  else
-    selected=$(git worktree list \
-      | fzf --prompt='remove worktree> ' --height=40% --reverse \
-      | awk '{print $1}')
-  fi
+  local selected="$(__git_resolve_worktree 'remove worktree> ' "$1")" || return
   [[ -n "$selected" ]] && git worktree remove "$selected"
 }
 
@@ -368,7 +368,7 @@ _gmb()  { __git_complete_as merge  }
 _gmbn() { __git_complete_as merge  }
 _gmbs() { __git_complete_as merge  }
 _gdaw() { _complete_worktree_branches }
-_gwa()  { __git_complete_as switch }
+_gwc()  { __git_complete_as switch }
 _gwd()  { _complete_worktree_branches }
 _gws()  { _complete_worktree_branches }
 
@@ -379,6 +379,6 @@ compdef _gmb  gmb
 compdef _gmbn gmbn
 compdef _gmbs gmbs
 compdef _gdaw gdaw
-compdef _gwa  gwa
+compdef _gwc  gwc
 compdef _gwd  gwd
 compdef _gws  gws
