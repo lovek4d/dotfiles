@@ -199,11 +199,16 @@ alias gdc='git diff HEAD~1'
 alias gdcp='git diff | clipcopy && echo "Copied diff to clipboard"'
 alias gdap='clippaste | git apply && echo "Applied diff from clipboard"'
 
-## apply diff from worktree (fzf select)
+## apply diff from worktree (fzf select or branch arg)
 gdaw() {
   local wt
-  wt=$(git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' \
-    | fzf --prompt='apply from worktree> ' --height=40% --reverse)
+  if [[ -n "$1" ]]; then
+    wt="$(__git_worktree_for_branch "$1")"
+    [[ -z "$wt" ]] && echo "no worktree for branch: $1" && return 1
+  else
+    wt=$(git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' \
+      | fzf --prompt='apply from worktree> ' --height=40% --reverse)
+  fi
   [[ -n "$wt" ]] || return
   git -C "$wt" diff | git apply && echo "Applied diff from $wt"
 }
@@ -273,6 +278,13 @@ __git_worktree_path() {
   echo "$(dirname "$root")/$(basename "$root")-worktrees/$1"
 }
 
+__git_worktree_for_branch() {
+  git worktree list --porcelain | awk -v b="refs/heads/$1" '
+    /^worktree / { path=$2 }
+    /^branch / && $2==b { print path }
+  '
+}
+
 ## create worktree with new branch
 gwc() {
   [[ -z "$1" ]] && echo "usage: gwc <branch>" && return 1
@@ -283,35 +295,49 @@ gwc() {
   echo "Worktree at: $target"
 }
 
-## add worktree for existing branch (fzf select)
+## add worktree for existing branch (fzf select or branch arg)
 gwa() {
   local branch
-  branch=$(git branch --format='%(refname:short)' \
-    | fzf --prompt='worktree branch> ' --height=40% --reverse)
+  if [[ -n "$1" ]]; then
+    branch="$1"
+  else
+    branch=$(git branch --format='%(refname:short)' \
+      | fzf --prompt='worktree branch> ' --height=40% --reverse)
+  fi
   [[ -z "$branch" ]] && return 1
   local target="$(__git_worktree_path "$branch")"
   mkdir -p "$(dirname "$target")"
-  git worktree add "$@" "$target" "$branch"
+  git worktree add "$target" "$branch"
   echo "Worktree at: $target"
 }
 
-## cd to worktree (fzf select)
+## cd to worktree (fzf select or branch arg)
 gws() {
   local selected
-  selected=$(git worktree list --porcelain \
-    | grep '^worktree ' \
-    | sed 's/^worktree //' \
-    | fzf --prompt='worktree> ' --height=40% --reverse)
+  if [[ -n "$1" ]]; then
+    selected="$(__git_worktree_for_branch "$1")"
+    [[ -z "$selected" ]] && echo "no worktree for branch: $1" && return 1
+  else
+    selected=$(git worktree list --porcelain \
+      | grep '^worktree ' \
+      | sed 's/^worktree //' \
+      | fzf --prompt='worktree> ' --height=40% --reverse)
+  fi
   [[ -n "$selected" ]] && cd "$selected"
 }
 
-## remove worktree (fzf select)
+## remove worktree (fzf select or branch arg)
 gwd() {
   local selected
-  selected=$(git worktree list \
-    | fzf --prompt='remove worktree> ' --height=40% --reverse \
-    | awk '{print $1}')
-  [[ -n "$selected" ]] && git worktree remove "$@" "$selected"
+  if [[ -n "$1" ]]; then
+    selected="$(__git_worktree_for_branch "$1")"
+    [[ -z "$selected" ]] && echo "no worktree for branch: $1" && return 1
+  else
+    selected=$(git worktree list \
+      | fzf --prompt='remove worktree> ' --height=40% --reverse \
+      | awk '{print $1}')
+  fi
+  [[ -n "$selected" ]] && git worktree remove "$selected"
 }
 
 ## cd to main worktree
@@ -329,12 +355,22 @@ __git_complete_as() {
   _git
 }
 
+_complete_worktree_branches() {
+  local branches
+  branches=(${(f)"$(git worktree list --porcelain 2>/dev/null | awk '/^branch /{sub("refs/heads/","",$2); print $2}')"})
+  _describe 'worktree' branches
+}
+
 _gsw()  { __git_complete_as switch }
 _gswd() { __git_complete_as switch }
 _gdb()  { __git_complete_as diff   }
 _gmb()  { __git_complete_as merge  }
 _gmbn() { __git_complete_as merge  }
 _gmbs() { __git_complete_as merge  }
+_gdaw() { _complete_worktree_branches }
+_gwa()  { __git_complete_as switch }
+_gwd()  { _complete_worktree_branches }
+_gws()  { _complete_worktree_branches }
 
 compdef _gsw  gsw
 compdef _gswd gswd
@@ -342,3 +378,7 @@ compdef _gdb  gdb
 compdef _gmb  gmb
 compdef _gmbn gmbn
 compdef _gmbs gmbs
+compdef _gdaw gdaw
+compdef _gwa  gwa
+compdef _gwd  gwd
+compdef _gws  gws

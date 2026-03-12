@@ -174,9 +174,14 @@ EOF
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
 
   local selection
-  selection=$(git worktree list | tail -n +2 \
-    | fzf --prompt='destroy worktree> ' --height=40% --reverse)
-  [[ -z "$selection" ]] && return 1
+  if [[ -n "$1" ]]; then
+    selection=$(git worktree list | tail -n +2 | awk -v b="[$1]" '$3==b')
+    [[ -z "$selection" ]] && echo "no worktree for branch: $1" && return 1
+  else
+    selection=$(git worktree list | tail -n +2 \
+      | fzf --prompt='destroy worktree> ' --height=40% --reverse)
+    [[ -z "$selection" ]] && return 1
+  fi
 
   local wt_path branch session
   wt_path=$(echo "$selection" | awk '{print $1}')
@@ -271,6 +276,9 @@ cwf() {
 
 _cgt() { __git_complete_as switch }
 compdef _cgt cgt
+
+_cgtd() { _complete_worktree_branches }
+compdef _cgtd cgtd
 
 cwd() {
   [[ -z "$TMUX" ]] && echo "cwd must be run inside a tmux session" && return 1
