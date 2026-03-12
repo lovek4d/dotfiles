@@ -16,9 +16,12 @@ bindkey '\e[3;3~' kill-word            # option+delete
 bindkey '\e[H'    beginning-of-line    # home
 bindkey '\e[F'    end-of-line          # end
 
+# brew prefix — resolved once, reused throughout
+(( $+commands[brew] )) && _BREW_PFX=$(brew --prefix)
+
 # autocomplete (must be before sourcing files that use compdef)
-if command -v brew >/dev/null 2>&1; then
-  FPATH="$(brew --prefix)/share/zsh/site-functions:${FPATH}"
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  FPATH="$_BREW_PFX/share/zsh/site-functions:${FPATH}"
 fi
 if [[ -d /usr/share/zsh/vendor-completions ]]; then
   FPATH="/usr/share/zsh/vendor-completions:${FPATH}"
@@ -217,11 +220,6 @@ alias sudo='sudo '
 alias python='python3'
 alias wdvenv='source .venv/bin/activate'
 
-# brew prefix (computed once, reused below)
-if __is_macos && command -v brew >/dev/null 2>&1; then
-  _BREW_PFX="$(brew --prefix)"
-fi
-
 # nvm + autocomplete
 export NVM_DIR="$HOME/.nvm"
 if [[ -n "${_BREW_PFX:-}" ]]; then
@@ -240,11 +238,14 @@ alias zvim='${EDITOR:-vim} ~/.zshrc'
 alias zsrc='source ~/.zshrc'
 alias zup='zvim && zsrc'
 
-# brew shell init
-if __is_macos; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+# brew shell env (inlined from brew shellenv, no subprocess)
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  export HOMEBREW_PREFIX="$_BREW_PFX"
+  export HOMEBREW_CELLAR="$_BREW_PFX/Cellar"
+  export HOMEBREW_REPOSITORY="$_BREW_PFX"
+  path=("$_BREW_PFX/bin" "$_BREW_PFX/sbin" $path)
+  export MANPATH="$_BREW_PFX/share/man${MANPATH+:$MANPATH}:"
+  export INFOPATH="$_BREW_PFX/share/info:${INFOPATH:-}"
 fi
 
 # zoxide (j/ji)
