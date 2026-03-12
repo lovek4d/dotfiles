@@ -18,12 +18,12 @@ to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; if [ -f \"$f\" ] && read t < \"$f\" &
 
 hooks_dir = os.path.expanduser("~/.claude/hooks")
 os.makedirs(hooks_dir, exist_ok=True)
-hook_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/hooks/no-cd.py"))
-hook_dst = os.path.join(hooks_dir, "no-cd.py")
+hook_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/hooks/no-paths.py"))
+hook_dst = os.path.join(hooks_dir, "no-paths.py")
 if os.path.lexists(hook_dst):
     os.remove(hook_dst)
 os.symlink(hook_src, hook_dst)
-no_cd_hook = f"python3 {hook_dst}"
+no_paths_hook = f"python3 {hook_dst}"
 
 statusline_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/statusline.sh"))
 statusline_dst = os.path.expanduser("~/.claude/statusline.sh")
@@ -36,7 +36,7 @@ settings["statusLine"] = {"type": "command", "command": statusline_dst}
 settings["hooks"] = {
     "PreToolUse": [
         {"matcher": "Bash",
-         "hooks": [{"type": "command", "command": no_cd_hook, "timeout": 5}]}
+         "hooks": [{"type": "command", "command": no_paths_hook, "timeout": 5}]}
     ],
     "Notification": [
         {"matcher": "permission_prompt|elicitation_dialog",
