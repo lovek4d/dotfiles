@@ -27,7 +27,7 @@ EOF
 pk() {
   local sig="${1:-TERM}"
   local pids
-  pids=$(ps aux | fzf --multi --header='select processes to kill' | awk '{print $2}')
+  pids=$(ps aux | __fzf --multi --header='select processes to kill' | awk '{print $2}')
   [[ -z "$pids" ]] && return 0
   echo "$pids" | xargs kill -"$sig"
   echo "sent SIG$sig to: $(echo $pids | tr '\n' ' ')"

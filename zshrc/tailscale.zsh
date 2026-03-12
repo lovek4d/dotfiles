@@ -49,7 +49,7 @@ tsinit() {
 _ts_pick_device() {
   local prompt=$1
   tailscale status | awk 'NR>1 && $2 != "" { print $2 }' \
-    | fzf --prompt="$prompt" --height=40% --reverse
+    | __fzf --prompt="$prompt"
 }
 
 ## SSH to tailnet device (inline or fzf pick)

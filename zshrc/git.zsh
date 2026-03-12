@@ -259,7 +259,7 @@ gswap() {
 ## delete branches by pattern, or fzf select
 gdl() {
   if [[ -n "$1" ]]; then
-    git branch | grep -E "$1" | sed 's/^\*//' | xargs -n1 git branch -D
+    git branch | grep -F "$1" | sed 's/^\*//' | xargs -n1 git branch -D
   else
     local branches
     branches=$(__git_fzf_local_branch 'delete branch> ' --multi)
@@ -343,7 +343,7 @@ gwc() {
 ## cd to worktree (fzf select or branch arg)
 gws() {
   local selected="$(__git_resolve_worktree 'worktree> ' "$1")" || return
-  [[ -n "$selected" ]] && cd "$selected"
+  cd "$selected" || return 1
 }
 
 ## remove worktree (fzf select or branch arg)
@@ -356,7 +356,7 @@ gwd() {
 gwsm() {
   local main_wt
   main_wt=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
-  [[ -n "$main_wt" ]] && cd "$main_wt"
+  [[ -n "$main_wt" ]] && { cd "$main_wt" || return 1; }
 }
 
 # completions

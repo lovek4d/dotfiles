@@ -32,7 +32,7 @@ sc() {
     return
   fi
   local host
-  host=$(awk '/^Host / && !/\*/ { print $2 }' ~/.ssh/config 2>/dev/null | fzf --prompt="ssh> ") || return 0
+  host=$(awk '/^Host / && !/\*/ { print $2 }' ~/.ssh/config 2>/dev/null | __fzf --prompt="ssh> ") || return 0
   ssh "$host"
 }
 
