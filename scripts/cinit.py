@@ -38,6 +38,8 @@ readonly_perms = [
     "Bash(git branch:*)",
     "Bash(git remote:*)",
     "Bash(git rev-parse:*)",
+    "Bash(git grep:*)",
+    "Bash(git ls-tree:*)",
     # version control — github cli
     "Bash(gh pr view:*)",
     "Bash(gh pr list:*)",
