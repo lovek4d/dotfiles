@@ -76,17 +76,16 @@ tmn() {
   tmux new-session -ds "$1" && __tmux_jump "$1"
 }
 
+_tmux_pick_session() {
+  tmux list-sessions -F '#{session_name}' 2>/dev/null \
+    | __fzf --prompt="${1:-session> }"
+}
+
 ## switch session (inline or fzf select)
 tms() {
-  if [[ -n "$1" ]]; then
-    __tmux_jump "$1"
-  else
-    local session
-    session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
-      | fzf --prompt='switch session> ' --height=40% --reverse)
-    [[ -z "$session" ]] && return 1
-    __tmux_jump "$session"
-  fi
+  local session=${1:-$(_tmux_pick_session 'switch session> ')}
+  [[ -z "$session" ]] && return 1
+  __tmux_jump "$session"
 }
 
 ## background command with notification on completion
@@ -116,13 +115,7 @@ tmb() {
 
 ## kill session (inline or fzf select)
 tmk() {
-  if [[ -n "$1" ]]; then
-    tmux kill-session -t "$1"
-  else
-    local session
-    session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
-      | fzf --prompt='kill session> ' --height=40% --reverse)
-    [[ -z "$session" ]] && return 1
-    tmux kill-session -t "$session"
-  fi
+  local session=${1:-$(_tmux_pick_session 'kill session> ')}
+  [[ -z "$session" ]] && return 1
+  tmux kill-session -t "$session"
 }

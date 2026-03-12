@@ -5,7 +5,7 @@ __git_fzf_branch() {
     git ${=cmd} "$@"
   else
     local branch
-    branch=$(__git_branch_list | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
+    branch=$(__git_branch_list | __fzf --prompt="$prompt")
     [[ -n "$branch" ]] && git ${=cmd} "$branch"
   fi
 }
@@ -13,7 +13,7 @@ __git_fzf_branch() {
 __git_fzf_local_branch() {
   local prompt="$1"; shift
   git branch --format='%(refname:short)' | sort \
-    | fzf --prompt="$prompt" --height=40% --reverse --no-sort "$@"
+    | __fzf --prompt="$prompt" "$@"
 }
 
 __git_resolve_worktree() {
@@ -21,7 +21,7 @@ __git_resolve_worktree() {
   if [[ -z "$branch" ]]; then
     branch=$(git worktree list --porcelain \
       | awk '/^branch / {sub("refs/heads/", "", $2); print $2}' \
-      | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
+      | __fzf --prompt="$prompt")
     [[ -z "$branch" ]] && return 1
   fi
   local wt="$(__git_worktree_for_branch "$branch")"
@@ -32,7 +32,7 @@ __git_resolve_worktree() {
 __git_stash_fzf() {
   local action=$1 prompt=$2; shift 2
   local entry
-  entry=$(git stash list | fzf --prompt="$prompt" --height=40% --reverse --no-sort)
+  entry=$(git stash list | __fzf --prompt="$prompt")
   [[ -z "$entry" ]] && return 1
   git stash $action "$@" "${entry%%:*}"
 }
@@ -251,7 +251,7 @@ gswm() {
 ## swap branch with stash (fzf select)
 gswap() {
   local branch
-  branch=$(__git_branch_list | fzf --prompt='swap to> ' --height=40% --reverse --no-sort)
+  branch=$(__git_branch_list | __fzf --prompt='swap to> ')
   [[ -z "$branch" ]] && return 1
   git stash -m "switch staging" && git switch "$branch" && git stash pop
 }
@@ -283,7 +283,7 @@ alias gwp='git worktree prune'
 
 __git_worktree_path() {
   local branch="$1" root="${2:-$(git rev-parse --show-toplevel)}"
-  echo "$(dirname "$root")/$(basename "$root")-worktrees/$branch"
+  echo "${root:h}/${root:t}-worktrees/$branch"
 }
 
 __git_worktree_add() {
@@ -327,7 +327,7 @@ gwc() {
   if [[ -n "$1" ]]; then
     branch="$1"
   else
-    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse --no-sort)
+    branch=$(__git_branch_list | __fzf --prompt='worktree branch> ')
   fi
   [[ -z "$branch" ]] && return 1
 
@@ -355,7 +355,7 @@ gwd() {
 ## cd to main worktree
 gwsm() {
   local main_wt
-  main_wt=$(git worktree list --porcelain | grep '^worktree ' | head -1 | sed 's/^worktree //')
+  main_wt=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
   [[ -n "$main_wt" ]] && cd "$main_wt"
 }
 

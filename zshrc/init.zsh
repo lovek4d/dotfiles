@@ -26,6 +26,9 @@ fi
 autoload -Uz promptinit && promptinit
 autoload -Uz compinit && compinit
 
+# fzf base wrapper
+__fzf() { fzf --height=40% --reverse --no-sort "$@"; }
+
 # source others
 source $HOME/dev/dotfiles/zshrc/git.zsh
 source $HOME/dev/dotfiles/zshrc/tmux.zsh

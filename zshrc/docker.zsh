@@ -10,22 +10,22 @@ fi
 # helpers
 _d_pick_running() {
   _dcmd ps --format '{{.Names}}' 2>/dev/null \
-    | fzf --prompt="${1:-container> }" --height=40% --reverse
+    | __fzf --prompt="${1:-container> }"
 }
 
 _d_pick_stopped() {
   _dcmd ps -a --filter 'status=exited' --format '{{.Names}}' 2>/dev/null \
-    | fzf --prompt="${1:-container> }" --height=40% --reverse "$@"
+    | __fzf --prompt="${1:-container> }" "${@:2}"
 }
 
 _d_pick_any() {
   _dcmd ps -a --format '{{.Names}}' 2>/dev/null \
-    | fzf --prompt="${1:-container> }" --height=40% --reverse "$@"
+    | __fzf --prompt="${1:-container> }" "${@:2}"
 }
 
 _d_pick_image() {
   _dcmd images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null \
-    | fzf --prompt="${1:-image> }" --height=40% --reverse "$@"
+    | __fzf --prompt="${1:-image> }" "${@:2}"
 }
 
 # core

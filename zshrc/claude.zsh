@@ -87,7 +87,7 @@ EOF
   if [[ -n "$1" ]]; then
     branch="$1"
   else
-    branch=$(__git_branch_list | fzf --prompt='worktree branch> ' --height=40% --reverse --no-sort)
+    branch=$(__git_branch_list | __fzf --prompt='worktree branch> ')
     [[ -z "$branch" ]] && return 1
   fi
 
@@ -123,7 +123,7 @@ EOF
   fi
 
   local base
-  base=$(__git_branch_list | fzf --prompt='base branch> ' --height=40% --reverse --no-sort)
+  base=$(__git_branch_list | __fzf --prompt='base branch> ')
   [[ -z "$base" ]] && return 1
 
   cgt "$local_branch" "$base"
@@ -155,7 +155,7 @@ EOF
     [[ -z "$selection" ]] && echo "no worktree for branch: $1" && return 1
   else
     selection=$(git worktree list | tail -n +2 \
-      | fzf --prompt='destroy worktree> ' --height=40% --reverse)
+      | __fzf --prompt='destroy worktree> ')
     [[ -z "$selection" ]] && return 1
   fi
 
@@ -170,11 +170,10 @@ EOF
   echo "destroyed worktree: $branch ($wt_path)"
 }
 
-cw() {
-  local queue_dir="$HOME/.claude/queue"
-  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
-
-  local prompts=() idles=() thinkings=() pauseds=()
+_cw_load_sessions() {
+  local queue_dir="$1"
+  typeset -n _prompts="$2" _idles="$3" _thinkings="$4" _pauseds="$5"
+  _prompts=() _idles=() _thinkings=() _pauseds=()
   for f in "$queue_dir"/*(.N); do
     local session="${f:t}" typ=""
     if ! tmux has-session -t "$session" 2>/dev/null; then
@@ -182,12 +181,20 @@ cw() {
     fi
     read -r typ < "$f" 2>/dev/null
     case "$typ" in
-      prompt)   prompts+=("$session") ;;
-      thinking) thinkings+=("$session") ;;
-      paused)   pauseds+=("$session") ;;
-      *)        idles+=("$session") ;;  # idle, done, unknown → idle
+      prompt)   _prompts+=("$session") ;;
+      thinking) _thinkings+=("$session") ;;
+      paused)   _pauseds+=("$session") ;;
+      *)        _idles+=("$session") ;;  # idle, done, unknown → idle
     esac
   done
+}
+
+cw() {
+  local queue_dir="$HOME/.claude/queue"
+  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
+
+  local prompts=() idles=() thinkings=() pauseds=()
+  _cw_load_sessions "$queue_dir" prompts idles thinkings pauseds
 
   local total=$(( ${#prompts[@]} + ${#idles[@]} + ${#thinkings[@]} + ${#pauseds[@]} ))
   if [[ $total -eq 0 ]]; then
@@ -197,15 +204,15 @@ cw() {
 
   echo "$total session(s) waiting"
   local entries=()
-  for s in "${prompts[@]}";  do entries+=("[prompt]   $s"); done
-  for s in "${idles[@]}";    do entries+=("[idle]     $s"); done
+  for s in "${prompts[@]}";   do entries+=("[prompt]   $s"); done
+  for s in "${idles[@]}";     do entries+=("[idle]     $s"); done
   for s in "${thinkings[@]}"; do entries+=("[thinking] $s"); done
-  for s in "${pauseds[@]}";  do entries+=("[paused]   $s"); done
+  for s in "${pauseds[@]}";   do entries+=("[paused]   $s"); done
 
   if [[ -n "$TMUX" ]]; then
     local choice
     choice=$(printf '%s\n' "${entries[@]}" \
-      | fzf --prompt='jump to> ' --height=40% --reverse \
+      | __fzf --prompt='jump to> ' \
       | sed 's/^\[[a-z]*\] *//')
     [[ -n "$choice" ]] && tmux switch-client -t "$choice"
   else
@@ -222,21 +229,9 @@ cwf() {
   local showing=""
   echo "auto-focus mode (ctrl-c to stop)"
   while true; do
-    local best="" first_idle="" first_thinking="" first_paused=""
-    for f in "$queue_dir"/*(.N); do
-      local session="${f:t}" typ=""
-      if ! tmux has-session -t "$session" 2>/dev/null; then
-        rm -f "$f"; continue
-      fi
-      read -r typ < "$f" 2>/dev/null
-      case "$typ" in
-        prompt)   best="$session"; break ;;
-        thinking) [[ -z "$first_thinking" ]] && first_thinking="$session" ;;
-        paused)   [[ -z "$first_paused" ]]   && first_paused="$session" ;;
-        *)        [[ -z "$first_idle" ]]      && first_idle="$session" ;;  # idle, done, unknown
-      esac
-    done
-    [[ -z "$best" ]] && best="${first_idle:-${first_thinking:-$first_paused}}"
+    local prompts=() idles=() thinkings=() pauseds=()
+    _cw_load_sessions "$queue_dir" prompts idles thinkings pauseds
+    local best="${prompts[1]:-${idles[1]:-${thinkings[1]:-${pauseds[1]}}}}"
 
     if [[ -n "$best" && "$best" != "$showing" ]]; then
       tmux switch-client -c "$cwf_tty" -t "$best"
