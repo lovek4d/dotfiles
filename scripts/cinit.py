@@ -25,6 +25,14 @@ if os.path.lexists(hook_dst):
 os.symlink(hook_src, hook_dst)
 no_cd_hook = f"python3 {hook_dst}"
 
+statusline_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/statusline.sh"))
+statusline_dst = os.path.expanduser("~/.claude/statusline.sh")
+if os.path.lexists(statusline_dst):
+    os.remove(statusline_dst)
+os.symlink(statusline_src, statusline_dst)
+
+settings["statusLine"] = {"type": "command", "command": statusline_dst}
+
 settings["hooks"] = {
     "PreToolUse": [
         {"matcher": "Bash",
