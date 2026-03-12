@@ -45,6 +45,7 @@ cinit() {
   python3 "$HOME/dev/dotfiles/scripts/cinit.py"
   echo "claude settings.json updated (hooks + git allowlist)"
   echo "~/.claude/CLAUDE.md -> $HOME/dev/dotfiles/configs/claude-global.md"
+  echo "~/.claude/hooks/no-cd.py -> $HOME/dev/dotfiles/scripts/hooks/no-cd.py"
 }
 
 alias cn='claude'

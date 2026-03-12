@@ -16,7 +16,20 @@ def enqueue(typ, notify=True):
 dequeue = f"bash -c '{Q}; rm -f \"$D/$S\"'"
 to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; if [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ]; then echo thinking > \"$f\"; fi'"
 
+hooks_dir = os.path.expanduser("~/.claude/hooks")
+os.makedirs(hooks_dir, exist_ok=True)
+hook_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/hooks/no-cd.py"))
+hook_dst = os.path.join(hooks_dir, "no-cd.py")
+if os.path.lexists(hook_dst):
+    os.remove(hook_dst)
+os.symlink(hook_src, hook_dst)
+no_cd_hook = f"python3 {hook_dst}"
+
 settings["hooks"] = {
+    "PreToolUse": [
+        {"matcher": "Bash",
+         "hooks": [{"type": "command", "command": no_cd_hook, "timeout": 5}]}
+    ],
     "Notification": [
         {"matcher": "permission_prompt|elicitation_dialog",
          "hooks": [{"type": "command", "command": enqueue("prompt"), "timeout": 5}]},
