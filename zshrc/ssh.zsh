@@ -1,6 +1,5 @@
 __ssh_show_pubkey() {
-  clipcopy < "${1}.pub" 2>/dev/null && echo "public key copied to clipboard" \
-    || echo "public key:\n$(cat "${1}.pub")"
+  echo "public key:\n$(cat "${1}.pub")"
 }
 
 # auto-load ssh key into agent
@@ -17,7 +16,8 @@ ssh aliases:
     s <args>      ssh (passthrough)
     sc [host]     fzf host picker from ~/.ssh/config
   keys
-    sinit [email] generate key + add to agent + copy pubkey
+    sinit [email] generate key + add to agent + show pubkey
+    scid          copy pubkey to clipboard
     scid <host>   copy public key to remote host for passwordless login
 EOF
     return 0
@@ -38,7 +38,10 @@ sc() {
 
 # copy public key to remote host (passwordless login)
 scid() {
-  [[ -z "$1" ]] && echo "usage: scid <host>" && return 1
+  if [[ -z "$1" ]]; then
+    clipcopy < "$HOME/.ssh/id_ed25519.pub" && echo "ssh public key copied to clipboard"
+    return
+  fi
   ssh-copy-id "$1"
 }
 

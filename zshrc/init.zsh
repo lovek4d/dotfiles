@@ -77,7 +77,7 @@ zinit() {
   local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm python@3 claude-code colima docker starship tailscale
+    _zinit_macos "${pkgs[@]}" nvm claude-code colima docker starship tailscale
   elif __is_linux; then
     _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io
   else
