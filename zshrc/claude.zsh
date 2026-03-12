@@ -147,8 +147,7 @@ EOF
     return 0
   fi
 
-  local root
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+  git rev-parse --show-toplevel >/dev/null 2>&1 || { echo "not in a git repo" >&2; return 1; }
 
   local selection
   if [[ -n "$1" ]]; then
@@ -161,14 +160,19 @@ EOF
   fi
 
   local wt_path branch session
-  wt_path=$(echo "$selection" | awk '{print $1}')
-  branch=$(echo "$selection" | awk '{print $3}' | tr -d '[]')
+  read -r wt_path branch <<< "$(echo "$selection" | awk '{gsub(/[\[\]]/, "", $3); print $1, $3}')"
   session="${branch//\//-}"
 
   tmux kill-session -t "$session" 2>/dev/null
   git worktree remove "$wt_path"
 
   echo "destroyed worktree: $branch ($wt_path)"
+}
+
+__cw_queue_dir() {
+  local _d="$HOME/.claude/queue"
+  [[ ! -d "$_d" ]] && echo "no queue directory (run cinit)" >&2 && return 1
+  echo "$_d"
 }
 
 _cw_load_sessions() {
@@ -191,8 +195,7 @@ _cw_load_sessions() {
 }
 
 cw() {
-  local queue_dir="$HOME/.claude/queue"
-  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
+  local queue_dir; queue_dir=$(__cw_queue_dir) || return 1
 
   local prompts=() idles=() thinkings=() pauseds=()
   _cw_load_sessions "$queue_dir" prompts idles thinkings pauseds
@@ -222,8 +225,7 @@ cw() {
 }
 
 cwf() {
-  local queue_dir="$HOME/.claude/queue"
-  [[ ! -d "$queue_dir" ]] && echo "no queue directory (run cinit)" && return 1
+  local queue_dir; queue_dir=$(__cw_queue_dir) || return 1
   [[ -z "$TMUX" ]] && echo "cwf must be run inside a tmux session" && return 1
 
   local cwf_tty=$(tmux display-message -p '#{client_tty}')
