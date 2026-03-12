@@ -97,6 +97,9 @@ readonly_perms = [
     # shell builtins
     "Bash(echo:*)",
     "Bash(test:*)",
+    # web browsing
+    "WebFetch(*)",
+    "WebSearch(*)",
 ]
 denied_perms = [
     "Bash(sed -i:*)",
