@@ -40,8 +40,11 @@ __git_stash_fzf() {
 __git_branch_list() {
   {
     git branch --format='%(refname:short)' | sort
-    git branch --remotes --format='%(refname:short)' | sort
-  } | awk '!seen[$0]++'
+    git branch --remotes --format='%(refname:short)' | grep '/' | sort
+  } | awk '
+    !/\// { seen[$0]++; print; next }
+    { local=$0; sub(/^[^\/]+\//, "", local); if (!seen[local]) print }
+  '
 }
 
 __git_default_branch() {
