@@ -1,6 +1,6 @@
 ## Shell Command Rules
 - NEVER use `cd` to change to the current working directory — you are already there
-- NEVER use `cd` to navigate away from the starting working directory — use absolute paths in Bash commands instead
+- NEVER use `cd` to navigate away from the starting working directory — use relative paths for child paths, absolute paths for everything else
 - NEVER use `git -C <path>` when `<path>` is the current working directory — just run `git` directly
 - When running Bash commands, use paths relative to the current working directory. Do not prefix commands with the absolute path of the working directory.
 
