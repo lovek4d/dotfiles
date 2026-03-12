@@ -16,6 +16,11 @@
   - `git add <files> && git commit -m "..." && git push -u origin <branch>` then `gh pr create ...`
   - Or if already committed: `git push -u origin <branch> && gh pr create ...`
 
+## No Decorative Echo in Bash Commands
+- NEVER use `echo` to print visual separators or decorations (e.g., `echo "---"`, `echo "==="`, `echo ""`). These trigger the "quoted characters in flag names" permission prompt.
+- Output text directly in your response text instead of via bash commands.
+- Do not prefix or suffix command groups with separator echoes.
+
 ## Minimizing Permission Prompts
 
 ### Prefer Dedicated Tools Over Bash
