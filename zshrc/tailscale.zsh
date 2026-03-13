@@ -54,13 +54,16 @@ _ts_pick_device() {
 
 ## SSH to tailnet device (inline or fzf pick)
 tssh() {
-  local device=${1:-$(_ts_pick_device 'ssh device> ')}
-  [[ -z "$device" ]] && return 1
-  local ip
-  ip=$(tailscale status | awk -v d="$device" '$2 == d { print $1; exit }')
-  if [[ -z "$ip" ]]; then
-    echo "tssh: device '$device' not found in tailnet" >&2
-    return 1
+  local device="$1" ip
+  if [[ -z "$device" ]]; then
+    local selection
+    selection=$(tailscale status | awk 'NR>1 && $2 != "" { print $1, $2 }' \
+      | __fzf --prompt='ssh device> ')
+    [[ -z "$selection" ]] && return 1
+    ip="${selection%% *}" device="${selection##* }"
+  else
+    ip=$(tailscale status | awk -v d="$device" '$2 == d { print $1; exit }')
+    [[ -z "$ip" ]] && echo "tssh: device '$device' not found in tailnet" >&2 && return 1
   fi
   ssh "$ip"
 }

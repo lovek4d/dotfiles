@@ -152,7 +152,7 @@ EOF
   local selection
   if [[ -n "$1" ]]; then
     selection=$(git worktree list | tail -n +2 | awk -v b="[$1]" '$3==b')
-    [[ -z "$selection" ]] && echo "no worktree for branch: $1" && return 1
+    [[ -z "$selection" ]] && echo "no worktree for branch: $1" >&2 && return 1
   else
     selection=$(git worktree list | tail -n +2 \
       | __fzf --prompt='destroy worktree> ')
@@ -160,7 +160,8 @@ EOF
   fi
 
   local wt_path branch session
-  read -r wt_path branch <<< "$(echo "$selection" | awk '{gsub(/[\[\]]/, "", $3); print $1, $3}')"
+  local -a fields=("${(z)selection}")
+  local wt_path="$fields[1]" branch="${fields[3]//[\[\]]/}"
   session="${branch//\//-}"
 
   tmux kill-session -t "$session" 2>/dev/null
@@ -250,7 +251,7 @@ cwf() {
       showing=""
     fi
 
-    sleep 1
+    sleep 2
   done
 }
 

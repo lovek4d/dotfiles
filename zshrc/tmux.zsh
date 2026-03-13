@@ -104,7 +104,7 @@ _tmb_notify() {
 
 tmb() {
   [[ -z "$1" ]] && echo "usage: tmb <command...>" && return 1
-  local name="bg-$(echo "$*" | awk '{for(i=1;i<=3&&i<=NF;i++) printf (i>1?"_":"") $i}')"
+  local name="bg-${(j:_:)${(@s: :)*}[1,3]}"
   if tmux has-session -t "$name" 2>/dev/null; then
     echo "already running $name" && return 1
   fi

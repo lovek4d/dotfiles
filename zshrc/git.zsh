@@ -33,7 +33,7 @@ __git_resolve_worktree() {
 
 __git_apply_worktree_diff() {
   local wt="$1"
-  git -C "$wt" diff HEAD | git apply
+  git -C "$wt" diff HEAD | git apply || return 1
   git -C "$wt" ls-files --others --exclude-standard | while read -r f; do
     mkdir -p "$(dirname "$f")"
     cp "$wt/$f" "$f"
@@ -54,7 +54,7 @@ __git_branch_list() {
     git branch --remotes --format='%(refname:short)' | grep '/' | sort
   } | awk '
     !/\// { seen[$0]++; print; next }
-    { local=$0; sub(/^[^\/]+\//, "", local); if (!seen[local]) print }
+    { b=$0; sub(/^[^\/]+\//, "", b); if (!seen[b]) print }
   '
 }
 
@@ -250,8 +250,7 @@ gdawh() {
     branch=$(__git_worktree_branches | __fzf --prompt='apply from worktree (hard)> ')
     [[ -z "$branch" ]] && return 1
   fi
-  local wt="$(__git_worktree_for_branch "$branch")"
-  [[ -z "$wt" ]] && echo "no worktree for branch: $branch" >&2 && return 1
+  local wt; wt=$(__git_resolve_worktree '' "$branch") || return 1
   git reset --hard || return 1
   git switch -d "$branch" || return 1
   __git_apply_worktree_diff "$wt"

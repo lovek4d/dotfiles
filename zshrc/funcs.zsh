@@ -27,7 +27,7 @@ EOF
 pk() {
   local sig="${1:-TERM}"
   local pids
-  pids=$(ps aux | __fzf --multi --header='select processes to kill' | awk '{print $2}')
+  pids=$(ps aux | __fzf --multi --header-lines=1 | awk '{print $2}')
   [[ -z "$pids" ]] && return 0
   echo "$pids" | xargs kill -"$sig"
   echo "sent SIG$sig to: $(echo $pids | tr '\n' ' ')"
@@ -44,7 +44,7 @@ port() {
   fi
   echo "$output"
   local pid
-  pid=$(echo "$output" | awk 'NR>1 {print $2}' | head -1)
+  pid=$(awk 'NR==2 {print $2; exit}' <<< "$output")
   [[ -z "$pid" ]] && return 0
   echo ""
   read -q "reply?kill pid $pid? [y/N] " || { echo; return 0; }
