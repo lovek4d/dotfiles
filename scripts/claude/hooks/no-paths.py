@@ -8,7 +8,8 @@ if re.search(r'(?:^|[;&|]|\n)\s*cd(\s|$)', cmd, re.MULTILINE):
     print(
         "Blocked: do not use `cd` — it has no effect on subsequent tool calls. "
         "Use relative paths for files within the project, or absolute paths for "
-        "everything else. Rewrite the command without `cd`."
+        "everything else. Rewrite the command without `cd`.",
+        file=sys.stderr,
     )
     sys.exit(2)
 
@@ -18,6 +19,7 @@ for m in re.finditer(r'\bgit\b[^;&|\n]*\s-C\s+([^\s;&|\n]+)', cmd):
         print(
             "Blocked: do not use `git -C <path>` when <path> is the current working "
             "directory — it bypasses allowlisted permission patterns. "
-            "Use bare `git` commands instead."
+            "Use bare `git` commands instead.",
+            file=sys.stderr,
         )
         sys.exit(2)
