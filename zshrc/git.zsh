@@ -16,12 +16,14 @@ __git_fzf_local_branch() {
     | __fzf --prompt="$prompt" "$@"
 }
 
+__git_worktree_branches() {
+  git worktree list --porcelain 2>/dev/null | awk '/^branch / {sub("refs/heads/", "", $2); print $2}'
+}
+
 __git_resolve_worktree() {
   local prompt="$1" branch="$2"
   if [[ -z "$branch" ]]; then
-    branch=$(git worktree list --porcelain \
-      | awk '/^branch / {sub("refs/heads/", "", $2); print $2}' \
-      | __fzf --prompt="$prompt")
+    branch=$(__git_worktree_branches | __fzf --prompt="$prompt")
     [[ -z "$branch" ]] && return 1
   fi
   local wt="$(__git_worktree_for_branch "$branch")"
@@ -245,9 +247,7 @@ gdaw() {
 gdawh() {
   local branch="$1"
   if [[ -z "$branch" ]]; then
-    branch=$(git worktree list --porcelain \
-      | awk '/^branch / {sub("refs/heads/", "", $2); print $2}' \
-      | __fzf --prompt='apply from worktree (hard)> ')
+    branch=$(__git_worktree_branches | __fzf --prompt='apply from worktree (hard)> ')
     [[ -z "$branch" ]] && return 1
   fi
   local wt="$(__git_worktree_for_branch "$branch")"
@@ -404,30 +404,22 @@ __git_complete_as() {
 
 _complete_worktree_branches() {
   local branches
-  branches=(${(f)"$(git worktree list --porcelain 2>/dev/null | awk '/^branch /{sub("refs/heads/","",$2); print $2}')"})
+  branches=(${(f)"$(__git_worktree_branches)"})
   _describe 'worktree' branches
 }
 
-_gsw()  { __git_complete_as switch }
-_gswd() { __git_complete_as switch }
-_gdb()  { __git_complete_as diff   }
-_gmb()  { __git_complete_as merge  }
-_gmbn() { __git_complete_as merge  }
-_gmbs() { __git_complete_as merge  }
-_gdaw()  { _complete_worktree_branches }
-_gdawh() { _complete_worktree_branches }
-_gwc()   { __git_complete_as switch }
-_gwd()   { _complete_worktree_branches }
-_gws()   { _complete_worktree_branches }
-
-compdef _gsw   gsw
-compdef _gswd  gswd
-compdef _gdb   gdb
-compdef _gmb   gmb
-compdef _gmbn  gmbn
-compdef _gmbs  gmbs
-compdef _gdaw  gdaw
-compdef _gdawh gdawh
-compdef _gwc   gwc
-compdef _gwd   gwd
-compdef _gws   gws
+() {
+  local -A _git_completions=(
+    gsw switch  gswd switch  gdb diff
+    gmb merge   gmbn merge   gmbs merge
+    gwc switch
+  )
+  local fn cmd
+  for fn cmd in "${(@kv)_git_completions}"; do
+    eval "_${fn}() { __git_complete_as ${cmd} }; compdef _${fn} ${fn}"
+  done
+  local -a _wt_completions=(gdaw gdawh gwd gws)
+  for fn in "${_wt_completions[@]}"; do
+    eval "_${fn}() { _complete_worktree_branches }; compdef _${fn} ${fn}"
+  done
+}
