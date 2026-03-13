@@ -179,9 +179,15 @@ _cw_load_sessions() {
   local queue_dir="$1"
   typeset -n _prompts="$2" _idles="$3" _thinkings="$4" _pauseds="$5"
   _prompts=() _idles=() _thinkings=() _pauseds=()
+
+  local -A _active=()
+  local s; for s in ${(f)"$(tmux list-sessions -F '#{session_name}' 2>/dev/null)"}; do
+    _active[$s]=1
+  done
+
   for f in "$queue_dir"/*(.N); do
     local session="${f:t}" typ=""
-    if ! tmux has-session -t "$session" 2>/dev/null; then
+    if [[ -z "${_active[$session]}" ]]; then
       rm -f "$f"; continue
     fi
     read -r typ < "$f" 2>/dev/null

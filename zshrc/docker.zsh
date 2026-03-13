@@ -8,24 +8,15 @@ else
 fi
 
 # helpers
-_d_pick_running() {
-  _dcmd ps --format '{{.Names}}' 2>/dev/null \
-    | __fzf --prompt="${1:-container> }"
-}
-
-_d_pick_stopped() {
-  _dcmd ps -a --filter 'status=exited' --format '{{.Names}}' 2>/dev/null \
-    | __fzf --prompt="${1:-container> }" "${@:2}"
-}
-
-_d_pick_any() {
-  _dcmd ps -a --format '{{.Names}}' 2>/dev/null \
-    | __fzf --prompt="${1:-container> }" "${@:2}"
-}
-
-_d_pick_image() {
-  _dcmd images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null \
-    | __fzf --prompt="${1:-image> }" "${@:2}"
+# usage: _d_pick <prompt> <docker-cmd-args...> [-- <fzf-args...>]
+_d_pick() {
+  local prompt="${1:-container> }"; shift
+  local dcmd_args=() fzf_args=() past_sep=0
+  for arg in "$@"; do
+    if [[ "$arg" == "--" ]]; then past_sep=1; continue; fi
+    if (( past_sep )); then fzf_args+=("$arg"); else dcmd_args+=("$arg"); fi
+  done
+  _dcmd "${dcmd_args[@]}" 2>/dev/null | __fzf --prompt="$prompt" "${fzf_args[@]}"
 }
 
 # core
@@ -80,31 +71,31 @@ dpsa() { _dcmd ps -a "$@"; }
 drun() { _dcmd run -it --rm "$@"; }
 
 dlog() {
-  local ctr=${1:-$(_d_pick_running 'logs> ')}
+  local ctr=${1:-$(_d_pick 'logs> '    ps --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd logs -f "$ctr"
 }
 
 dex() {
-  local ctr=${1:-$(_d_pick_running 'exec> ')}
+  local ctr=${1:-$(_d_pick 'exec> '    ps --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd exec -it "$ctr" /bin/sh
 }
 
 dst() {
-  local ctr=${1:-$(_d_pick_running 'stop> ')}
+  local ctr=${1:-$(_d_pick 'stop> '    ps --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd stop "$ctr"
 }
 
 dsta() {
-  local ctr=${1:-$(_d_pick_stopped 'start> ')}
+  local ctr=${1:-$(_d_pick 'start> '   ps -a --filter 'status=exited' --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd start "$ctr"
 }
 
 drs() {
-  local ctr=${1:-$(_d_pick_running 'restart> ')}
+  local ctr=${1:-$(_d_pick 'restart> ' ps --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd restart "$ctr"
 }
@@ -115,7 +106,7 @@ drm() {
     return
   fi
   local ctrs
-  ctrs=$(_d_pick_stopped 'rm> ' --multi)
+  ctrs=$(_d_pick 'rm> '    ps -a --filter 'status=exited' --format '{{.Names}}' -- --multi)
   [[ -z "$ctrs" ]] && return 1
   echo "$ctrs" | xargs _dcmd rm
 }
@@ -133,7 +124,7 @@ dirm() {
     return
   fi
   local imgs
-  imgs=$(_d_pick_image 'rmi> ' --multi)
+  imgs=$(_d_pick 'rmi> '   images --format '{{.Repository}}:{{.Tag}}' -- --multi)
   [[ -z "$imgs" ]] && return 1
   echo "$imgs" | xargs _dcmd rmi
 }
@@ -161,7 +152,7 @@ dstat()   { _dcmd stats "$@"; }
 dnet()    { _dcmd network ls "$@"; }
 
 dins() {
-  local ctr=${1:-$(_d_pick_any 'inspect> ')}
+  local ctr=${1:-$(_d_pick 'inspect> ' ps -a --format '{{.Names}}')}
   [[ -z "$ctr" ]] && return 1
   _dcmd inspect "$ctr"
 }

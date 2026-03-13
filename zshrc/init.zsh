@@ -249,9 +249,7 @@ if [[ -n "${_BREW_PFX:-}" ]]; then
 fi
 
 # zoxide (j/ji)
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh --cmd j)"
-fi
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh --cmd j)"
 
 # zsh plugins (syntax-highlighting must be last)
 if [[ -n "${_BREW_PFX:-}" ]]; then
@@ -263,9 +261,7 @@ else
 fi
 
 # starship prompt
-if command -v starship >/dev/null 2>&1; then
-  eval "$(starship init zsh)"
-fi
+(( $+commands[starship] )) && eval "$(starship init zsh)"
 
 # fzf key-bindings (ctrl+r history search)
 if [[ -n "${_BREW_PFX:-}" ]]; then
