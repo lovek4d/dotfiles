@@ -29,6 +29,15 @@ __git_resolve_worktree() {
   echo "$wt"
 }
 
+__git_apply_worktree_diff() {
+  local wt="$1"
+  git -C "$wt" diff HEAD | git apply
+  git -C "$wt" ls-files --others --exclude-standard | while read -r f; do
+    mkdir -p "$(dirname "$f")"
+    cp "$wt/$f" "$f"
+  done
+}
+
 __git_stash_fzf() {
   local action=$1 prompt=$2; shift 2
   local entry
@@ -103,6 +112,7 @@ git aliases:
   stash
     gs     git stash
     gsa    git stash apply
+    gsaf   stash apply (fzf)
     gsd    git stash drop
     gsdf   stash drop (fzf)
     gsl    git stash list
@@ -134,6 +144,7 @@ git aliases:
     gdcp   copy diff to clipboard
     gdap   apply diff from clipboard
     gdaw   apply from worktree (fzf)
+    gdawh  apply from worktree, detach + discard changes (fzf)
     gdb    diff branch (fzf)
     gdm    git diff main
   resets
@@ -149,6 +160,7 @@ git aliases:
     gswc   git switch --create
     gswd   switch branch detached (fzf)
     gswm   switch to main
+    gswmh  switch to main, discard changes
   worktrees
     gwc    create or reuse worktree (fzf)
     gwd    rm worktree (fzf)
@@ -184,9 +196,10 @@ alias gsl='git stash list'
 alias gsa='git stash apply'
 alias gss='git stash show -p'
 
-## stash pop/drop (fzf select)
-gspf() { __git_stash_fzf pop  'pop stash> '  "$@"; }
-gsdf() { __git_stash_fzf drop 'drop stash> ' "$@"; }
+## stash pop/drop/apply (fzf select)
+gspf() { __git_stash_fzf pop   'pop stash> '   "$@"; }
+gsdf() { __git_stash_fzf drop  'drop stash> '  "$@"; }
+gsaf() { __git_stash_fzf apply 'apply stash> ' "$@"; }
 
 # commits
 alias gc='git commit'
@@ -224,7 +237,25 @@ alias gdap='clippaste | git apply && echo "Applied diff from clipboard"'
 ## apply diff from worktree (fzf select or branch arg)
 gdaw() {
   local wt="$(__git_resolve_worktree 'apply from worktree> ' "$1")" || return
-  git -C "$wt" diff | git apply && echo "Applied diff from $wt"
+  __git_apply_worktree_diff "$wt"
+  echo "Applied diff from $wt"
+}
+
+## apply from worktree: discard local changes, detach at branch (fzf select or branch arg)
+gdawh() {
+  local branch="$1"
+  if [[ -z "$branch" ]]; then
+    branch=$(git worktree list --porcelain \
+      | awk '/^branch / {sub("refs/heads/", "", $2); print $2}' \
+      | __fzf --prompt='apply from worktree (hard)> ')
+    [[ -z "$branch" ]] && return 1
+  fi
+  local wt="$(__git_worktree_for_branch "$branch")"
+  [[ -z "$wt" ]] && echo "no worktree for branch: $branch" >&2 && return 1
+  git reset --hard || return 1
+  git switch -d "$branch" || return 1
+  __git_apply_worktree_diff "$wt"
+  echo "Applied all changes from $branch worktree"
 }
 
 ## diff branch (inline or fzf select)
@@ -247,9 +278,10 @@ gsw()  { __git_fzf_branch switch      'switch> ' "$@"; }
 gswd() { __git_fzf_branch 'switch -d' 'detach> ' "$@"; }
 
 ## switch to main/master (autodetect)
-gswm() {
-  git switch "$(__git_default_branch)"
-}
+gswm() { git switch "$(__git_default_branch)" }
+
+## switch to main/master, discard local changes
+gswmh() { git switch -f "$(__git_default_branch)"; }
 
 ## swap branch with stash (fzf select)
 gswap() {
@@ -382,18 +414,20 @@ _gdb()  { __git_complete_as diff   }
 _gmb()  { __git_complete_as merge  }
 _gmbn() { __git_complete_as merge  }
 _gmbs() { __git_complete_as merge  }
-_gdaw() { _complete_worktree_branches }
-_gwc()  { __git_complete_as switch }
-_gwd()  { _complete_worktree_branches }
-_gws()  { _complete_worktree_branches }
+_gdaw()  { _complete_worktree_branches }
+_gdawh() { _complete_worktree_branches }
+_gwc()   { __git_complete_as switch }
+_gwd()   { _complete_worktree_branches }
+_gws()   { _complete_worktree_branches }
 
-compdef _gsw  gsw
-compdef _gswd gswd
-compdef _gdb  gdb
-compdef _gmb  gmb
-compdef _gmbn gmbn
-compdef _gmbs gmbs
-compdef _gdaw gdaw
-compdef _gwc  gwc
-compdef _gwd  gwd
-compdef _gws  gws
+compdef _gsw   gsw
+compdef _gswd  gswd
+compdef _gdb   gdb
+compdef _gmb   gmb
+compdef _gmbn  gmbn
+compdef _gmbs  gmbs
+compdef _gdaw  gdaw
+compdef _gdawh gdawh
+compdef _gwc   gwc
+compdef _gwd   gwd
+compdef _gws   gws
