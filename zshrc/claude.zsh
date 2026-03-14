@@ -249,6 +249,33 @@ __cw_queue_dir() {
   echo "$_d"
 }
 
+__cw_recency_timestamp() {
+  local file="$1"
+  local now mtime seconds_ago
+
+  [[ ! -f "$file" ]] && return
+
+  now=$(date +%s)
+  mtime=$(stat -L -f%m "$file" 2>/dev/null || stat -L -c%Y "$file" 2>/dev/null)
+  seconds_ago=$((now - mtime))
+
+  if (( seconds_ago < 60 )); then
+    printf "%ds" "$seconds_ago"
+  elif (( seconds_ago < 3600 )); then
+    printf "%dm" $((seconds_ago / 60))
+  elif (( seconds_ago < 86400 )); then
+    printf "%dh" $((seconds_ago / 3600))
+  else
+    printf "%dd" $((seconds_ago / 86400))
+  fi
+}
+
+__cw_colorize_recency() {
+  local timestamp="$1"
+  # Accent color: bright cyan (36m for tmux/shell)
+  printf "\033[36m%s\033[0m" "$timestamp"
+}
+
 _cw_load_sessions() {
   local queue_dir="$1"
   typeset -n _prompts="$2" _idles="$3" _thinkings="$4" _pauseds="$5"
@@ -288,16 +315,33 @@ cw() {
 
   echo "$total session(s) waiting"
   local entries=()
-  for s in "${prompts[@]}";   do entries+=("[prompt]   $s"); done
-  for s in "${idles[@]}";     do entries+=("[idle]     $s"); done
-  for s in "${thinkings[@]}"; do entries+=("[thinking] $s"); done
-  for s in "${pauseds[@]}";   do entries+=("[paused]   $s"); done
+  local recency
+
+  for s in "${prompts[@]}"; do
+    recency=$(__cw_recency_timestamp "$queue_dir/$s")
+    entries+=("[prompt]   $s  $(__cw_colorize_recency "$recency")")
+  done
+
+  for s in "${idles[@]}"; do
+    recency=$(__cw_recency_timestamp "$queue_dir/$s")
+    entries+=("[idle]     $s  $(__cw_colorize_recency "$recency")")
+  done
+
+  for s in "${thinkings[@]}"; do
+    recency=$(__cw_recency_timestamp "$queue_dir/$s")
+    entries+=("[thinking] $s  $(__cw_colorize_recency "$recency")")
+  done
+
+  for s in "${pauseds[@]}"; do
+    recency=$(__cw_recency_timestamp "$queue_dir/$s")
+    entries+=("[paused]   $s  $(__cw_colorize_recency "$recency")")
+  done
 
   if [[ -n "$TMUX" ]]; then
     local choice
     choice=$(printf '%s\n' "${entries[@]}" \
       | __fzf --prompt='jump to> ' \
-      | sed 's/^\[[a-z]*\] *//')
+      | awk '{print $2}')
     [[ -n "$choice" ]] && tmux switch-client -t "$choice"
   else
     printf '  %s\n' "${entries[@]}"
