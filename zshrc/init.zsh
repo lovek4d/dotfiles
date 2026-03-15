@@ -80,7 +80,7 @@ EOF
 
 # bootstrap
 zinit() {
-  local pkgs=(git fzf tmux python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
+  local pkgs=(git fzf tmux vim python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
 
   if __is_macos; then
     _zinit_macos "${pkgs[@]}" nvm claude-code colima docker starship tailscale
