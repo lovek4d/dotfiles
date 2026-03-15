@@ -13,12 +13,18 @@ s() {
     cat <<'EOF'
 ssh aliases:
   connect
-    s <args>      ssh (passthrough)
-    sc [host]     fzf host picker from ~/.ssh/config
+    s <args>                         ssh (passthrough)
+    sc [host]                        fzf host picker from ~/.ssh/config
+  config
+    sconf                            edit ~/.ssh/config
   keys
-    sinit [email] generate key + add to agent + show pubkey
-    scid          copy pubkey to clipboard
-    scid <host>   copy public key to remote host for passwordless login
+    sinit [email]                    generate key + add to agent + show pubkey
+    ska [keyfile]                    add key to agent (fzf picker if no arg)
+    skl                              list keys in agent
+    scid                             copy pubkey to clipboard
+    scid <host>                      copy public key to remote host
+  tunnel
+    stun <host> <port> [local-port]  port forward to localhost
 EOF
     return 0
   fi
@@ -59,4 +65,36 @@ sinit() {
   ssh-add "$keyfile" 2>/dev/null
   __ssh_show_pubkey "$keyfile"
   echo "add to GitHub: https://github.com/settings/ssh/new"
+}
+
+# open ssh config in editor
+sconf() {
+  ${EDITOR:-vim} "$HOME/.ssh/config"
+}
+
+# add key to agent (fzf picker if no arg)
+ska() {
+  if [[ -n "$1" ]]; then
+    ssh-add "$1"
+    return
+  fi
+  local keyfile
+  keyfile=$(ls "$HOME/.ssh/"id_* 2>/dev/null | grep -v '\.pub$' | __fzf --prompt="key> ") || return 0
+  ssh-add "$keyfile"
+}
+
+# list keys loaded in agent
+skl() {
+  ssh-add -l
+}
+
+# port forward: stun <host> <remote-port> [local-port]
+stun() {
+  if [[ $# -lt 2 ]]; then
+    echo "usage: stun <host> <remote-port> [local-port]"
+    return 1
+  fi
+  local host="$1" rport="$2" lport="${3:-$2}"
+  ssh -fNL "${lport}:localhost:${rport}" "$host"
+  echo "tunnel: localhost:${lport} → ${host}:${rport}"
 }
