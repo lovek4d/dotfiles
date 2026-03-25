@@ -266,7 +266,7 @@ gdm() { git diff "$(__git_default_branch)"; }
 
 # resets
 alias grh='git reset --hard'
-alias grhc='git clean -fd'
+alias grhc='git reset --hard && git clean -fd'
 alias grs='git reset --soft'
 
 # branches
