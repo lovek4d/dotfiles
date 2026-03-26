@@ -343,17 +343,15 @@ __git_worktree_for_branch() {
 ## normalize remote branch: strips remote prefix into local_branch/start_point refs
 ## usage: __git_normalize_branch <branch> <local_branch_varname> <start_point_varname> [explicit_start]
 __git_normalize_branch() {
-  local _branch="$1" _explicit="${4:-}"
-  typeset -n _lbref="$2"
-  typeset -n _spref="$3"
+  local _branch="$1" _lbname="$2" _spname="$3" _explicit="${4:-}"
   if [[ -n "$_explicit" ]]; then
-    _spref="$_explicit"
+    eval "$_spname=\$_explicit"
   else
     local _remote_prefix="${_branch%%/*}"
     if [[ "$_branch" == */* ]] && git remote | grep -qx "$_remote_prefix" \
         && ! git show-ref --verify --quiet "refs/heads/$_branch"; then
-      _lbref="${_branch#*/}"
-      _spref="$_branch"
+      eval "$_lbname=\${_branch#*/}"
+      eval "$_spname=\$_branch"
     fi
   fi
 }
