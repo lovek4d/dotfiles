@@ -344,7 +344,8 @@ __git_worktree_for_branch() {
 ## usage: __git_normalize_branch <branch> <local_branch_varname> <start_point_varname> [explicit_start]
 __git_normalize_branch() {
   local _branch="$1" _explicit="${4:-}"
-  typeset -n _lbref="$2" _spref="$3"
+  typeset -n _lbref="$2"
+  typeset -n _spref="$3"
   if [[ -n "$_explicit" ]]; then
     _spref="$_explicit"
   else
