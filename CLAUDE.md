@@ -18,6 +18,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/docker.zsh` — Docker aliases (`d` prefix), compose (`dc` prefix), fzf container/image pickers
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key bootstrap (`sinit`), agent auto-load
 - `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`)
+- `zshrc/local/*.zsh` — machine-specific extensions (gitignored, not tracked)
 - `configs/claude-global.md` — global Claude Code rules (symlinked to `~/.claude/CLAUDE.md`)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
 - `configs/vimrc` — vim config (persistent undo)

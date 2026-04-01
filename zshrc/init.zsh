@@ -43,6 +43,10 @@ source $HOME/dev/dotfiles/zshrc/ssh.zsh
 source $HOME/dev/dotfiles/zshrc/docker.zsh
 source $HOME/dev/dotfiles/zshrc/whisper.zsh
 
+# machine-local extensions (gitignored — add .zsh files to zshrc/local/)
+for _f in $HOME/dev/dotfiles/zshrc/local/*.zsh(N); do source "$_f"; done
+unset _f
+
 # general
 z() {
   cat <<'EOF'
@@ -66,6 +70,8 @@ zshrc aliases:
     redact-json  redact JSON from clipboard
     pk           fzf process killer
     port <n>     show/kill process on port
+  local
+    zshrc/local/*.zsh  machine-specific extensions (gitignored)
   help
     c      claude aliases
     d      docker aliases

@@ -1,0 +1,2 @@
+zshrc/local/*
+!zshrc/local/.gitkeep
