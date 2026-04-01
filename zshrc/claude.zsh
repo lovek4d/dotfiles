@@ -97,7 +97,7 @@ EOF
   fi
 
   local root
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+  root="$(__git_repo_root 2>/dev/null)" || { echo "not in a git repo"; return 1; }
 
   # resolve branch: argument or fzf select
   local branch
@@ -152,7 +152,7 @@ EOF
 
   local msg="$*"
   local root
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not in a git repo" >&2; return 1; }
+  root="$(__git_repo_root 2>/dev/null)" || { echo "not in a git repo" >&2; return 1; }
 
   local slug
   slug="$(printf '%s' "$msg" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//' | sed 's/-*$//')"
