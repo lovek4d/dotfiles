@@ -1,4 +1,8 @@
 # helpers
+__git_repo_root() {
+  echo "${$(git rev-parse --path-format=absolute --git-common-dir):h}"
+}
+
 __git_fzf_branch() {
   local cmd=$1 prompt=$2; shift 2
   if [[ -n "$1" ]]; then
@@ -318,7 +322,7 @@ alias gwl='git worktree list'
 alias gwp='git worktree prune'
 
 __git_worktree_path() {
-  local branch="$1" root="${2:-$(git rev-parse --show-toplevel)}"
+  local branch="$1" root="${2:-$(__git_repo_root)}"
   echo "${root:h}/${root:t}-worktrees/$branch"
 }
 
