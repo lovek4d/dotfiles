@@ -333,10 +333,7 @@ __git_worktree_add() {
   elif [[ -n "$start_point" ]]; then
     git worktree add -b "$local_branch" "$target" "$start_point"
   else
-    local prev_branch
-    prev_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
-    if git switch "$local_branch" 2>/dev/null; then
-      git switch "$prev_branch" 2>/dev/null
+    if git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
       git worktree add "$target" "$local_branch"
     else
       git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
