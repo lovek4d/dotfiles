@@ -25,6 +25,13 @@ if os.path.lexists(hook_dst):
 os.symlink(hook_src, hook_dst)
 no_paths_hook = f"python3 {hook_dst}"
 
+prefer_tools_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/hooks/prefer-tools.py"))
+prefer_tools_dst = os.path.join(hooks_dir, "prefer-tools.py")
+if os.path.lexists(prefer_tools_dst):
+    os.remove(prefer_tools_dst)
+os.symlink(prefer_tools_src, prefer_tools_dst)
+prefer_tools_hook = f"python3 {prefer_tools_dst}"
+
 statusline_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/statusline.sh"))
 statusline_dst = os.path.expanduser("~/.claude/statusline.sh")
 if os.path.lexists(statusline_dst):
@@ -36,7 +43,10 @@ settings["statusLine"] = {"type": "command", "command": statusline_dst}
 settings["hooks"] = {
     "PreToolUse": [
         {"matcher": "Bash",
-         "hooks": [{"type": "command", "command": no_paths_hook, "timeout": 5}]}
+         "hooks": [
+             {"type": "command", "command": no_paths_hook, "timeout": 5},
+             {"type": "command", "command": prefer_tools_hook, "timeout": 5},
+         ]}
     ],
     "Notification": [
         {"matcher": "permission_prompt|elicitation_dialog",
