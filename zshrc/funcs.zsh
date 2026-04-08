@@ -51,3 +51,11 @@ port() {
   echo
   kill "$pid" && echo "killed $pid"
 }
+
+# delayed enter — sleep N minutes then press Enter, keeping mac awake
+denter() {
+  [[ -z "$1" ]] && echo "usage: denter <minutes>" && return 1
+  local secs=$(( $1 * 60 ))
+  echo "pressing enter in $1 min..."
+  caffeinate -i sleep "$secs" && osascript -e 'tell application "System Events" to key code 36'
+}
