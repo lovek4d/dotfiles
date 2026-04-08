@@ -333,7 +333,11 @@ __git_worktree_add() {
   elif [[ -n "$start_point" ]]; then
     git worktree add -b "$local_branch" "$target" "$start_point"
   else
-    git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
+    if git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
+      git worktree add "$target" "$local_branch"
+    else
+      git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
+    fi
   fi
 }
 
