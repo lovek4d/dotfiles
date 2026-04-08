@@ -147,5 +147,7 @@ for p in denied_perms:
     if p not in deny:
         deny.append(p)
 
+settings["showClearContextOnPlanAccept"] = True
+
 with open(path, "w") as f:
     json.dump(settings, f, indent=2)
