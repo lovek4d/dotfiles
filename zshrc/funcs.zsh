@@ -56,6 +56,14 @@ port() {
 denter() {
   [[ -z "$1" ]] && echo "usage: denter <minutes>" && return 1
   local secs=$(( $1 * 60 ))
-  echo "pressing enter in $1 min..."
-  caffeinate -i sleep "$secs" && osascript -e 'tell application "System Events" to key code 36'
+  caffeinate -di -t "$secs" &
+  local caf_pid=$!
+  while (( secs > 0 )); do
+    printf "\rdenter in %d:%02d " $(( secs / 60 )) $(( secs % 60 ))
+    sleep 1
+    (( secs-- ))
+  done
+  printf "\rdenter now!          \n"
+  kill "$caf_pid" 2>/dev/null
+  osascript -e 'tell application "System Events" to key code 36'
 }
