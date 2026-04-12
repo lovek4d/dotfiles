@@ -87,8 +87,7 @@ if [[ "$closer_triggered" == true ]]; then
   echo ""
   if [[ -n "$TMUX" ]]; then
     printf '%s' "$result" | clipcopy
-    tmux set-buffer "$result" && tmux paste-buffer 2>/dev/null
-    tmux send-keys Enter 2>/dev/null
+    tmux send-keys -l -- "$result" 2>/dev/null && tmux send-keys Enter 2>/dev/null
   else
     printf '%s' "$result" | clipcopy
     echo "Copied to clipboard."
@@ -116,7 +115,7 @@ case "$key" in
   "")
     # Enter: paste + copy
     printf '%s' "$result" | clipcopy
-    tmux set-buffer "$result" && tmux paste-buffer 2>/dev/null
+    tmux send-keys -l -- "$result" 2>/dev/null
     ;;
   $'\e')
     # Escape: copy only
