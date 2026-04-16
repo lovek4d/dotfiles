@@ -68,11 +68,7 @@ alias cr='claude --resume'
 alias cqh='claude --print --model haiku'
 alias cqs='claude --print --model sonnet'
 alias cqo='claude --print --model opus'
-if __is_macos; then
-  alias cup='brew upgrade claude-code'
-else
-  alias cup='npm update -g @anthropic-ai/claude-code'
-fi
+alias cup='claude update'
 
 cgt() {
   if [[ "$1" == "-h" || "$1" == "--help" ]]; then

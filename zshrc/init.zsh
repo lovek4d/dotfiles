@@ -89,7 +89,7 @@ zinit() {
   local pkgs=(git fzf tmux vim python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm claude-code colima docker starship tailscale
+    _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale
   elif __is_linux; then
     _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io
   else
@@ -111,6 +111,9 @@ zinit() {
   sinit
 
   echo "=== claude ==="
+  if ! command -v claude >/dev/null 2>&1; then
+    curl -fsSL https://claude.ai/install.sh | bash
+  fi
   cinit
 
   echo "=== done ==="
@@ -190,12 +193,6 @@ _zinit_linux() {
     nvm install --lts
   fi
 
-  # claude-code via npm
-  if ! command -v claude >/dev/null 2>&1; then
-    echo "=== installing claude-code ==="
-    npm install -g @anthropic-ai/claude-code
-  fi
-
   # starship prompt
   if ! command -v starship >/dev/null 2>&1; then
     echo "=== installing starship ==="
@@ -253,6 +250,9 @@ if [[ -n "${_BREW_PFX:-}" ]]; then
   export MANPATH="$_BREW_PFX/share/man${MANPATH+:$MANPATH}:"
   export INFOPATH="$_BREW_PFX/share/info:${INFOPATH:-}"
 fi
+
+# claude native installer drops binary here
+path=("$HOME/.local/bin" $path)
 
 # zoxide (j/ji)
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh --cmd j)"
