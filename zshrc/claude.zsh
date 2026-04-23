@@ -1,7 +1,7 @@
 __cgt_session() {
   local root="$1" target="$2" local_branch="$3"
   local session="${local_branch//\//-}"
-  local cmd="claude; cd '${root}' && git worktree remove '${target}'"
+  local cmd="claude --permission-mode plan; cd '${root}' && git worktree remove '${target}'"
 
   if [[ -n "$TMUX" ]]; then
     tmux new-session -ds "$session" -c "$target" "$cmd"
@@ -26,7 +26,7 @@ _cgtb_notify() {
 
 c() {
   if [[ $# -gt 0 ]]; then
-    claude "$@"
+    claude --permission-mode plan "$@"
     return
   fi
   cat <<'EOF'
@@ -62,9 +62,9 @@ cinit() {
   echo "~/.claude/hooks/no-cd.py -> $HOME/dev/dotfiles/scripts/hooks/no-cd.py"
 }
 
-alias cn='claude'
+alias cn='claude --permission-mode plan'
 alias cq='claude --print'
-alias cr='claude --resume'
+alias cr='claude --resume --permission-mode plan'
 alias cqh='claude --print --model haiku'
 alias cqs='claude --print --model sonnet'
 alias cqo='claude --print --model opus'
