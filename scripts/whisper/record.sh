@@ -19,7 +19,7 @@ echo "[Whisper] Enter > C/P | ESC > copy | 'send it' > submit | ^C > quit"
 echo ""
 
 rm -f "$CLOSER_FLAG" "$CLOSER_RESULT"
-rec -q -c 1 "$TMPRAW" &
+rec -q "$TMPRAW" &
 REC_PID=$!
 
 # Periodic preview: snapshot + transcribe every 5s
@@ -28,7 +28,7 @@ REC_PID=$!
     sleep 5
     kill -0 $REC_PID 2>/dev/null || break
     cp "$TMPRAW" "$TMPCHUNK" 2>/dev/null
-    sox --ignore-length "$TMPCHUNK" -r 16000 -b 16 -e signed-integer "$TMPCHUNK16" 2>/dev/null || continue
+    sox --ignore-length "$TMPCHUNK" -r 16000 -b 16 -c 1 -e signed-integer "$TMPCHUNK16" 2>/dev/null || continue
     preview=$(whisper-cli -m "$MODEL" -f "$TMPCHUNK16" --no-timestamps -l en --prompt "$PROMPT" 2>/dev/null \
       | grep -v '\[BLANK_AUDIO\]' | grep -v '^[[:space:]]*$' \
       | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -96,7 +96,7 @@ if [[ "$closer_triggered" == true ]]; then
 fi
 
 echo "Transcribing..."
-sox "$TMPRAW" -r 16000 -b 16 -e signed-integer "$TMPFILE" 2>/dev/null
+sox "$TMPRAW" -r 16000 -b 16 -c 1 -e signed-integer "$TMPFILE" 2>/dev/null
 rm -f "$TMPRAW"
 
 result=$(whisper-cli -m "$MODEL" -f "$TMPFILE" --no-timestamps -l en --prompt "$PROMPT" 2>/dev/null \
