@@ -160,7 +160,8 @@ git aliases:
   branches
     gbr    git branch
     gco    git checkout
-    gdl    delete branch (fzf)
+    gdl    delete branch -d (fzf)
+    gdlf   delete branch -D (fzf)
     gpla   pull all repos in cwd
     gsw    switch branch (fzf)
     gswap  swap w/ stash (fzf)
@@ -297,16 +298,19 @@ gswap() {
 }
 
 ## delete branches by pattern, or fzf select
-gdl() {
+__git_delete_branches() {
+  local flag="$1"; shift
   if [[ -n "$1" ]]; then
-    git branch | grep -F "$1" | sed 's/^\*//' | xargs -n1 git branch -D
+    git branch | grep -F "$1" | sed 's/^\*//' | xargs -n1 git branch "$flag"
   else
     local branches
     branches=$(__git_fzf_local_branch 'delete branch> ' --multi)
     [[ -z "$branches" ]] && return 1
-    echo "$branches" | xargs -n1 git branch -D --
+    echo "$branches" | xargs -n1 git branch "$flag" --
   fi
 }
+gdl()  { __git_delete_branches -d "$@"; }
+gdlf() { __git_delete_branches -D "$@"; }
 
 # pull all git repos in current dir
 gpla() {
