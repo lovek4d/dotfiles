@@ -257,15 +257,6 @@ path=("$HOME/.local/bin" $path)
 # zoxide (j/ji)
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh --cmd j)"
 
-# zsh plugins (syntax-highlighting must be last)
-if [[ -n "${_BREW_PFX:-}" ]]; then
-  [ -s "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-  [ -s "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-else
-  [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-  [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-fi
-
 # starship prompt
 (( $+commands[starship] )) && eval "$(starship init zsh)"
 
@@ -276,4 +267,15 @@ elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
   _fzf_keys="/usr/share/doc/fzf/examples/key-bindings.zsh"
 fi
 [[ -n "$_fzf_keys" && -s "$_fzf_keys" ]] && source "$_fzf_keys"
-unset _fzf_keys _BREW_PFX
+unset _fzf_keys
+
+# zsh plugins — must come after all widget/hook setup above.
+# syntax-highlighting must be the absolute last plugin sourced.
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  [ -s "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  [ -s "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+else
+  [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+  [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
+unset _BREW_PFX
