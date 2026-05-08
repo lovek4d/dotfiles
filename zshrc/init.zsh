@@ -72,6 +72,16 @@ zshrc aliases:
     port <n>     show/kill process on port
   local
     zshrc/local/*.zsh  machine-specific extensions (gitignored)
+  helpers
+    rg <pat>     ripgrep (fast grep, respects .gitignore)
+    fd <pat>     find replacement
+    bat <file>   cat with syntax highlight
+    fzf          fuzzy finder (ctrl+r history)
+    jq <expr>    JSON query
+    sd <p> <r>   sed replacement
+    tldr <cmd>   community cheatsheets
+    starship     prompt (auto)
+    zoxide       j/ji directory jump
   help
     c      claude aliases
     d      docker aliases
@@ -86,15 +96,26 @@ EOF
 
 # bootstrap
 zinit() {
-  local pkgs=(git fzf tmux vim python3 zsh-autosuggestions zsh-syntax-highlighting zoxide)
+  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale
+    _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale fd
   elif __is_linux; then
-    _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io
+    _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io fd-find
   else
     echo "unsupported platform: $OSTYPE" && return 1
   fi
+
+  echo "=== pipx packages ==="
+  local pkg pipx_installed=$(pipx list --short 2>/dev/null | awk '{print $1}')
+  for pkg in tldr; do
+    if echo "$pipx_installed" | grep -qx "$pkg"; then
+      echo "$pkg up to date"
+    else
+      echo "installing $pkg..."
+      pipx install "$pkg"
+    fi
+  done
 
   echo "=== git ==="
   ginit
@@ -169,7 +190,10 @@ _zinit_macos() {
 _zinit_linux() {
   echo "=== apt packages ==="
   sudo apt update
-  sudo apt install -y "$@"
+  local pkg
+  for pkg in "$@"; do
+    sudo apt install -y "$pkg" 2>/dev/null || echo "skipped: $pkg (not available in apt)"
+  done
 
   # add user to docker group (takes effect on next login)
   if getent group docker >/dev/null 2>&1 && ! groups | grep -qw docker; then
@@ -215,6 +239,12 @@ _zinit_linux() {
 # nav basics
 alias dev='cd ~/dev'
 mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# linux apt ships fd/bat under different binary names
+if __is_linux; then
+  (( $+commands[fdfind] )) && alias fd='fdfind'
+  (( $+commands[batcat] )) && alias bat='batcat'
+fi
 
 # sudo (trailing space expands aliases after sudo)
 alias sudo='sudo '
