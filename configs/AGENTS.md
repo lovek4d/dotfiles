@@ -32,7 +32,13 @@ them over equivalent Bash commands whenever possible:
 - Editing files: **Edit** not `sed`, `awk`
 - Writing files: **Write** not shell redirection
 
-Reserve Bash for system commands and operations with no dedicated tool equivalent.
+Reserve Bash for system commands and operations with no dedicated tool equivalent. **When Bash is necessary**, these modern helpers are installed and (where read-only) allowlisted — prefer them over POSIX equivalents:
+- `fd` over `find` for file discovery in pipelines
+- `rg` over `grep` for content search in pipelines
+- `jq` for JSON parsing
+- `bat` for paginated file view (rare; Read tool covers most cases)
+- `sd` for stream find/replace — **modifies files in-place by default; use the Edit tool for file changes**
+- `tldr <cmd>` for command cheatsheets
 
 ### Never Use Shell Redirection for File I/O
 Shell redirection (`>`, `>>`, heredocs, `tee`) triggers permission prompts every time.

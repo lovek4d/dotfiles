@@ -91,8 +91,10 @@ readonly_perms = [
     "Bash(cat:*)",
     "Bash(head:*)",
     "Bash(tail:*)",
+    "Bash(bat:*)",
     "Bash(ls:*)",
     "Bash(find:*)",
+    "Bash(fd:*)",
     "Bash(file:*)",
     "Bash(stat:*)",
     "Bash(readlink:*)",
@@ -125,6 +127,7 @@ readonly_perms = [
     "Bash(hostname:*)",
     "Bash(which:*)",
     "Bash(type:*)",
+    "Bash(tldr:*)",
     # shell builtins
     "Bash(echo:*)",
     "Bash(test:*)",

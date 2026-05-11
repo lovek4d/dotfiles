@@ -19,7 +19,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key bootstrap (`sinit`), agent auto-load
 - `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`)
 - `zshrc/local/*.zsh` — machine-specific extensions (gitignored, not tracked)
-- `configs/claude-global.md` — global Claude Code rules (symlinked to `~/.claude/CLAUDE.md`)
+- `configs/AGENTS.md` — global Claude Code / agent rules (symlinked to `~/.claude/CLAUDE.md`)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
 - `configs/vimrc` — vim config (persistent undo)
 
@@ -33,7 +33,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Claude Rules
 
-- To update global Claude Code rules, edit `configs/claude-global.md` — **never** edit `~/.claude/CLAUDE.md` directly (it is a symlink to this file).
+- To update global Claude Code rules, edit `configs/AGENTS.md` — **never** edit `~/.claude/CLAUDE.md` directly (it is a symlink to this file).
 
 ## Tool Preferences
 
