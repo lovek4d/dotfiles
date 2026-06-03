@@ -8,8 +8,9 @@ cmd = data.get('tool_input', {}).get('command', '')
 if re.search(r'\\[;|&<>]', cmd):
     print(
         "Blocked: escaped shell operators (\\; \\| \\& \\< \\>) hide command "
-        "structure in the permission prompt. Use Glob/Grep/Read tools instead, "
-        "or restructure the command to avoid backslash-escaped operators.",
+        "structure in the permission prompt. Use Read/Edit/Write tools or "
+        "allowlisted helpers (rg, fd), or restructure the command to avoid "
+        "backslash-escaped operators.",
         file=sys.stderr,
     )
     sys.exit(2)
@@ -18,17 +19,17 @@ if re.search(r'\\[;|&<>]', cmd):
 if re.search(r'\bfor\s+\w+\s+in\s+[^;]*(?:\*\*|\*)', cmd):
     print(
         "Blocked: shell loops over file globs should use built-in tools. "
-        "Use Glob to find matching files, then Grep or Read to process "
+        "Use `fd` to find matching files, then `rg` or the Read tool to process "
         "their contents.",
         file=sys.stderr,
     )
     sys.exit(2)
 
-# Check 3: find → use Glob
+# Check 3: find → use fd
 if re.match(r'\s*find\b', cmd):
     print(
-        "Blocked: use the Glob tool instead of `find` for file discovery. "
-        "Glob supports patterns like '**/*.swift' and returns sorted results.",
+        "Blocked: use `fd` instead of `find` for file discovery. "
+        "fd is allowlisted, has saner default syntax, and respects .gitignore.",
         file=sys.stderr,
     )
     sys.exit(2)
@@ -42,12 +43,11 @@ if re.match(r'\s*(cat|head|tail)\b', cmd) and not re.match(r'\s*tail\s+(-f|--fol
     )
     sys.exit(2)
 
-# Check 5: grep/rg → use Grep
-if re.match(r'\s*(grep|rg)\b', cmd):
+# Check 5: grep → use rg
+if re.match(r'\s*grep\b', cmd):
     print(
-        "Blocked: use the Grep tool instead of grep/rg for searching file "
-        "contents. Grep supports regex, glob filters, context lines, and "
-        "multiple output modes.",
+        "Blocked: use `rg` instead of `grep` for searching file contents. "
+        "rg is allowlisted, faster, and supports the same regex/glob/context flags.",
         file=sys.stderr,
     )
     sys.exit(2)
