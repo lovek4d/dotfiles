@@ -1,7 +1,7 @@
 __cgt_session() {
-  local root="$1" target="$2" local_branch="$3"
+  local root="$1" target="$2" local_branch="$3" launch="${4:-claude --permission-mode plan}"
   local session="${local_branch//\//-}"
-  local cmd="claude --permission-mode plan; cd '${root}' && git worktree remove '${target}'"
+  local cmd="${launch}; cd '${root}' && git worktree remove '${target}'"
 
   if [[ -n "$TMUX" ]]; then
     tmux new-session -ds "$session" -c "$target" "$cmd"
@@ -12,12 +12,12 @@ __cgt_session() {
 }
 
 _cgtb_notify() {
-  local rc=$1 session=$2 root=$3 target=$4
+  local rc=$1 session=$2 root=$3 target=$4 label="${5:-cgtb}"
   local tag="DONE" sound="Glass"
   [[ $rc -ne 0 ]] && tag="FAILED" && sound="Basso"
-  __notify "$tag" "cgtb: $session" "$sound"
+  __notify "$tag" "$label: $session" "$sound"
   clear
-  echo "[cgtb] $tag (exit $rc)"
+  echo "[$label] $tag (exit $rc)"
   echo "review changes, then press any key to remove worktree"
   read -k1
   cd "$root" && git worktree remove --force "$target"

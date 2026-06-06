@@ -38,6 +38,7 @@ source $HOME/dev/dotfiles/zshrc/tmux.zsh
 source $HOME/dev/dotfiles/zshrc/tailscale.zsh
 source $HOME/dev/dotfiles/zshrc/funcs.zsh
 source $HOME/dev/dotfiles/zshrc/claude.zsh
+source $HOME/dev/dotfiles/zshrc/codex.zsh
 source $HOME/dev/dotfiles/zshrc/vim.zsh
 source $HOME/dev/dotfiles/zshrc/ssh.zsh
 source $HOME/dev/dotfiles/zshrc/docker.zsh
@@ -84,6 +85,7 @@ zshrc aliases:
     zoxide       j/ji directory jump
   help
     c      claude aliases
+    co     codex aliases
     d      docker aliases
     g      git aliases
     s      ssh aliases
