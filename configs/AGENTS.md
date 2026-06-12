@@ -16,11 +16,6 @@
   - `git add <files> && git commit -m "..." && git push -u origin <branch>` then `gh pr create ...`
   - Or if already committed: `git push -u origin <branch> && gh pr create ...`
 
-## No Decorative Echo in Bash Commands
-- NEVER use `echo` to print visual separators or decorations (e.g., `echo "---"`, `echo "==="`, `echo ""`). These trigger the "quoted characters in flag names" permission prompt.
-- Output text directly in your response text instead of via bash commands.
-- Do not prefix or suffix command groups with separator echoes.
-
 ## Minimizing Permission Prompts
 
 ### Prefer Dedicated Tools Over Bash
@@ -39,14 +34,6 @@ Reserve Bash for system commands and operations with no dedicated tool equivalen
 - `bat` for paginated file view (rare; Read tool covers most cases)
 - `sd` for stream find/replace — **modifies files in-place by default; use the Edit tool for file changes**
 - `tldr <cmd>` for command cheatsheets
-
-### Never Use Shell Redirection for File I/O
-Shell redirection (`>`, `>>`, heredocs, `tee`) triggers permission prompts every time.
-Use dedicated tools instead — they bypass Bash entirely:
-- `echo "..." > file`, `cat > file`, `cat <<EOF > file` → use **Write** tool
-- `echo "..." >> file`, `tee -a file` → use **Edit** tool (append)
-- `sed -i` → use **Edit** tool
-- Reading: `cat file`, `head`, `tail` → use **Read** tool
 
 ### Batch Permission-Requiring Operations Toward the End
 - Do all reading, exploration, and planning first (all allowlisted/tool-based)
