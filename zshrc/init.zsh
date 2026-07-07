@@ -35,6 +35,7 @@ __fzf() { fzf --height=40% --reverse --no-sort "$@"; }
 # source others
 source $HOME/dev/dotfiles/zshrc/git.zsh
 source $HOME/dev/dotfiles/zshrc/tmux.zsh
+source $HOME/dev/dotfiles/zshrc/agent-worktree.zsh
 source $HOME/dev/dotfiles/zshrc/tailscale.zsh
 source $HOME/dev/dotfiles/zshrc/funcs.zsh
 source $HOME/dev/dotfiles/zshrc/claude.zsh

@@ -12,9 +12,10 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`), agent setup (`ainit`), and general aliases, loads zsh plugins
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
 - `zshrc/tmux.zsh` — tmux aliases (`tm` prefix) and keybindings
+- `zshrc/agent-worktree.zsh` — shared Claude/Codex worktree + tmux workflow (`cgt`/`cogt`/`agtd`)
 - `zshrc/tailscale.zsh` — Tailscale aliases (`ts` prefix), fzf device pickers, and `tsinit` for auth
-- `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and `cinit`
-- `zshrc/codex.zsh` — Codex CLI aliases (`co` prefix) and worktree workflow (`cogt`/`cogtf`/`cogtb`), mirroring the basics of `claude.zsh`
+- `zshrc/claude.zsh` — Claude Code aliases and `cinit`
+- `zshrc/codex.zsh` — Codex CLI aliases (`co` prefix)
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
 - `zshrc/docker.zsh` — Docker aliases (`d` prefix), compose (`dc` prefix), fzf container/image pickers
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key bootstrap (`sinit`), agent auto-load

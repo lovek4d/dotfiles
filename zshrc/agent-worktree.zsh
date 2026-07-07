@@ -1,0 +1,103 @@
+__agent_worktree_session() {
+  local root="$1" target="$2" local_branch="$3" launch="$4"
+  local session="${local_branch//\//-}"
+  local cmd="${launch}; cd '${root}' && git worktree remove '${target}'"
+
+  if [[ -n "$TMUX" ]]; then
+    tmux new-session -ds "$session" -c "$target" "$cmd"
+    tmux switch-client -t "$session"
+  else
+    tmux new-session -s "$session" -c "$target" "$cmd"
+  fi
+}
+
+__agent_worktree() {
+  local launch="$1" name="$2" label="$3" branch="$4"
+
+  if [[ "$branch" == "-h" || "$branch" == "--help" ]]; then
+    cat <<EOF
+$name - create a worktree + tmux session + launch $label
+
+usage: $name [branch-name]
+
+  If branch-name is given, creates or reuses that branch.
+  New branches start from the current branch.
+  If omitted, fzf-selects from existing branches.
+
+  If a tmux session already exists for the branch, attaches to it.
+  Use agtd to tear down a worktree + tmux session.
+EOF
+    return 0
+  fi
+
+  local root
+  root="$(__git_repo_root 2>/dev/null)" || { echo "not in a git repo"; return 1; }
+
+  if [[ -z "$branch" ]]; then
+    branch=$(__git_branch_list | __fzf --prompt='worktree branch> ')
+    [[ -z "$branch" ]] && return 1
+  fi
+
+  local local_branch="$branch" start_point=""
+  __git_normalize_branch "$branch" local_branch start_point
+  [[ -z "$start_point" ]] && start_point=HEAD
+
+  local session="${local_branch//\//-}"
+  if tmux has-session -t "$session" 2>/dev/null; then
+    if [[ -n "$TMUX" ]]; then
+      tmux switch-client -t "$session"
+    else
+      tmux attach-session -t "$session"
+    fi
+    return 0
+  fi
+
+  local target="$(__git_worktree_path "$local_branch" "$root")"
+  mkdir -p "$(dirname "$target")"
+  __git_worktree_add "$local_branch" "$target" "$start_point" || return 1
+  __agent_worktree_session "$root" "$target" "$local_branch" "$launch"
+}
+
+cgt() { __agent_worktree claude cgt Claude "$1"; }
+cogt() { __agent_worktree codex cogt Codex "$1"; }
+
+agtd() {
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    cat <<'EOF'
+agtd - destroy an agent worktree + tmux session
+
+usage: agtd [branch-name]
+
+  If branch-name is omitted, fzf-selects from active worktrees.
+  The branch itself is left intact.
+EOF
+    return 0
+  fi
+
+  git rev-parse --show-toplevel >/dev/null 2>&1 || { echo "not in a git repo" >&2; return 1; }
+
+  local selection
+  if [[ -n "$1" ]]; then
+    selection=$(git worktree list | tail -n +2 | awk -v b="[$1]" '$3==b')
+    [[ -z "$selection" ]] && echo "no worktree for branch: $1" >&2 && return 1
+  else
+    selection=$(git worktree list | tail -n +2 | __fzf --prompt='destroy worktree> ')
+    [[ -z "$selection" ]] && return 1
+  fi
+
+  local -a fields=("${(z)selection}")
+  local wt_path="$fields[1]" branch="${fields[3]//[\[\]]/}"
+  local session="${branch//\//-}"
+
+  tmux kill-session -t "$session" 2>/dev/null
+  git worktree remove "$wt_path"
+  echo "destroyed worktree: $branch ($wt_path)"
+}
+
+alias cgtd=agtd
+
+_cgt() { __git_complete_as switch }
+compdef _cgt cgt cogt
+
+_agtd() { _complete_worktree_branches }
+compdef _agtd agtd cgtd
