@@ -62,6 +62,7 @@ zshrc aliases:
     mkcd     mkdir + cd
   dotfiles
     zinit  install/upgrade all deps
+    ainit  agent settings + optional skills/plugins
     zpl    git pull dotfiles + source
   zshrc
     zsrc   source .zshrc
@@ -97,6 +98,72 @@ EOF
 }
 
 # bootstrap
+__confirm() {
+  local reply
+  read "reply?$1 [y/N] "
+  [[ "$reply" == [Yy]* ]]
+}
+
+__load_nvm() {
+  export NVM_DIR="$HOME/.nvm"
+  mkdir -p "$NVM_DIR"
+  if [[ -n "${_BREW_PFX:-}" ]]; then
+    [ -s "$_BREW_PFX/opt/nvm/nvm.sh" ] && \. "$_BREW_PFX/opt/nvm/nvm.sh"
+  fi
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+}
+
+__ensure_node() {
+  command -v npx >/dev/null 2>&1 && return 0
+
+  __load_nvm
+  if ! command -v nvm >/dev/null 2>&1; then
+    echo "skipped node: nvm missing"
+    return 1
+  fi
+
+  echo "=== node ==="
+  nvm install --lts
+  nvm use --lts
+}
+
+ainit() {
+  echo "=== claude settings ==="
+  cinit || return 1
+  __ensure_node || return 1
+
+  echo "=== optional agent extras ==="
+
+  if __confirm "Install Matt Pocock engineering skills for Claude/Codex?"; then
+    if command -v npx >/dev/null 2>&1; then
+      npx skills add mattpocock/skills -g
+    else
+      echo "skipped: npx missing"
+      echo "run later: npx skills add mattpocock/skills -g"
+    fi
+  fi
+
+  if __confirm "Install Ponytail for Claude Code and Codex?"; then
+    if command -v claude >/dev/null 2>&1; then
+      claude plugin marketplace add DietrichGebert/ponytail
+      claude plugin install ponytail@ponytail --scope user
+    else
+      echo "skipped Claude Ponytail: claude missing"
+    fi
+
+    if command -v codex >/dev/null 2>&1; then
+      codex plugin marketplace add DietrichGebert/ponytail
+      codex plugin add ponytail@ponytail
+    else
+      echo "skipped Codex Ponytail: codex missing"
+      echo "run later: codex plugin marketplace add DietrichGebert/ponytail"
+      echo "then: codex plugin add ponytail@ponytail"
+    fi
+
+    echo "Ponytail installed where available; restart Claude/Codex, then enable/disable it from plugin controls and trust hooks if prompted"
+  fi
+}
+
 zinit() {
   local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd)
 
@@ -107,6 +174,8 @@ zinit() {
   else
     echo "unsupported platform: $OSTYPE" && return 1
   fi
+
+  __ensure_node
 
   echo "=== pipx packages ==="
   local pkg pipx_installed=$(pipx list --short 2>/dev/null | awk '{print $1}')
@@ -137,9 +206,9 @@ zinit() {
   if ! command -v claude >/dev/null 2>&1; then
     curl -fsSL https://claude.ai/install.sh | bash
   fi
-  cinit
 
   echo "=== done ==="
+  echo "run 'ainit' for Claude settings/hooks and optional agent skills/plugins"
   echo "run 'winit' for whisper voice transcription (opt-in)"
   source ~/.zshrc
 }
@@ -159,6 +228,7 @@ _zinit_macos() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
+  _BREW_PFX=$(brew --prefix)
 
   echo "=== brew packages ==="
   local pkg missing=() outdated=() installed outdated_list
@@ -212,13 +282,6 @@ _zinit_linux() {
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
   fi
 
-  # load nvm + install node
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  if ! command -v node >/dev/null 2>&1; then
-    echo "=== installing node via nvm ==="
-    nvm install --lts
-  fi
-
   # starship prompt
   if ! command -v starship >/dev/null 2>&1; then
     echo "=== installing starship ==="
@@ -256,12 +319,10 @@ alias python='python3'
 alias wdvenv='source .venv/bin/activate'
 
 # nvm + autocomplete
-export NVM_DIR="$HOME/.nvm"
+__load_nvm
 if [[ -n "${_BREW_PFX:-}" ]]; then
-  [ -s "$_BREW_PFX/opt/nvm/nvm.sh" ] && \. "$_BREW_PFX/opt/nvm/nvm.sh"
   [ -s "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm"
 else
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 fi
 

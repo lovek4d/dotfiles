@@ -54,9 +54,9 @@ EOF
 }
 
 cinit() {
-  mkdir -p ~/.claude/queue
-  ln -sf "$HOME/dev/dotfiles/configs/AGENTS.md" "$HOME/.claude/CLAUDE.md"
-  python3 "$HOME/dev/dotfiles/scripts/cinit.py"
+  mkdir -p ~/.claude/queue || return 1
+  ln -sf "$HOME/dev/dotfiles/configs/AGENTS.md" "$HOME/.claude/CLAUDE.md" || return 1
+  python3 "$HOME/dev/dotfiles/scripts/cinit.py" || return 1
   echo "claude settings.json updated (hooks + git allowlist)"
   echo "~/.claude/CLAUDE.md -> $HOME/dev/dotfiles/configs/AGENTS.md"
   echo "~/.claude/hooks/no-paths.py -> $HOME/dev/dotfiles/scripts/claude/hooks/no-paths.py"

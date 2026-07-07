@@ -9,7 +9,7 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 ## Structure
 
 - `zshrc/platform.zsh` — platform detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), and notification (`__notify`) abstractions
-- `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`) and general aliases, loads zsh plugins
+- `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`), agent setup (`ainit`), and general aliases, loads zsh plugins
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
 - `zshrc/tmux.zsh` — tmux aliases (`tm` prefix), keybindings, and Claude queue status bar integration
 - `zshrc/tailscale.zsh` — Tailscale aliases (`ts` prefix), fzf device pickers, and `tsinit` for auth
@@ -44,8 +44,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Queue System
 
-File-based state in `~/.claude/queue/` tracks Claude Code session status across tmux sessions. Four priority levels: `prompt` > `idle` > `thinking` > `paused`. Hooks are written to `~/.claude/settings.json` by `cinit`. The tmux status bar shows counts (P/I/T/S) and `cwf` auto-focuses the highest-priority session.
+File-based state in `~/.claude/queue/` tracks Claude Code session status across tmux sessions. Four priority levels: `prompt` > `idle` > `thinking` > `paused`. Hooks are written to `~/.claude/settings.json` by `ainit` via `cinit`. The tmux status bar shows counts (P/I/T/S) and `cwf` auto-focuses the highest-priority session.
 
 ## Setup
 
-`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both finish with `tminit` and `cinit`.
+`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both ensure Node LTS/npm/npx through nvm. Run `ainit` separately for Claude settings/hooks and optional Claude/Codex skills/plugins.
