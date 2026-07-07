@@ -34,18 +34,13 @@ tmux aliases:
     [      scroll / copy mode
     arrow  switch pane
     c      new window
-    ctrl+q claude queue popup
-    ctrl+w demote session to paused
     d      detach
     n / p  next / prev window
     space  command palette
+    v      voice recording popup
     w      window list
     x      kill pane
     z      zoom pane
-
-  status bar
-    Prompt:N    needs input        Paused:N   shelved/paused
-    Idle:N      results ready      Thinking:N working
 
   settings
     tminit  symlink ~/.tmux.conf from repo

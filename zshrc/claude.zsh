@@ -45,19 +45,14 @@ claude aliases:
     cgtf   worktree from fzf-selected base branch
     cgtd   destroy worktree + tmux session
     cup    upgrade claude-code
-  queue
     cinit  setup ~/.claude/settings.json
-    cw     waiting sessions (fzf jump, priority sorted)
-    cwd    demote current session (→ paused)
-    cwf    auto-focus mode (polls queue, priority cascade)
 EOF
 }
 
 cinit() {
-  mkdir -p ~/.claude/queue || return 1
   ln -sf "$HOME/dev/dotfiles/configs/AGENTS.md" "$HOME/.claude/CLAUDE.md" || return 1
   python3 "$HOME/dev/dotfiles/scripts/cinit.py" || return 1
-  echo "claude settings.json updated (hooks + git allowlist)"
+  echo "claude settings.json updated (git allowlist + no-paths hook)"
   echo "~/.claude/CLAUDE.md -> $HOME/dev/dotfiles/configs/AGENTS.md"
   echo "~/.claude/hooks/no-paths.py -> $HOME/dev/dotfiles/scripts/claude/hooks/no-paths.py"
 }
@@ -239,112 +234,8 @@ EOF
   echo "destroyed worktree: $branch ($wt_path)"
 }
 
-__cw_queue_dir() {
-  local _d="$HOME/.claude/queue"
-  [[ ! -d "$_d" ]] && echo "no queue directory (run cinit)" >&2 && return 1
-  echo "$_d"
-}
-
-_cw_load_sessions() {
-  local queue_dir="$1"
-  typeset -n _prompts="$2" _idles="$3" _thinkings="$4" _pauseds="$5"
-  _prompts=() _idles=() _thinkings=() _pauseds=()
-
-  local -A _active=()
-  local s; for s in ${(f)"$(tmux list-sessions -F '#{session_name}' 2>/dev/null)"}; do
-    _active[$s]=1
-  done
-
-  for f in "$queue_dir"/*(.N); do
-    local session="${f:t}" typ=""
-    if [[ -z "${_active[$session]}" ]]; then
-      rm -f "$f"; continue
-    fi
-    read -r typ < "$f" 2>/dev/null
-    case "$typ" in
-      prompt)   _prompts+=("$session") ;;
-      thinking) _thinkings+=("$session") ;;
-      paused)   _pauseds+=("$session") ;;
-      *)        _idles+=("$session") ;;  # idle, done, unknown → idle
-    esac
-  done
-}
-
-cw() {
-  local queue_dir; queue_dir=$(__cw_queue_dir) || return 1
-
-  local prompts=() idles=() thinkings=() pauseds=()
-  _cw_load_sessions "$queue_dir" prompts idles thinkings pauseds
-
-  local total=$(( ${#prompts[@]} + ${#idles[@]} + ${#thinkings[@]} + ${#pauseds[@]} ))
-  if [[ $total -eq 0 ]]; then
-    echo "no sessions waiting"
-    return 0
-  fi
-
-  echo "$total session(s) waiting"
-  local entries=()
-  for s in "${prompts[@]}";   do entries+=("[prompt]   $s"); done
-  for s in "${idles[@]}";     do entries+=("[idle]     $s"); done
-  for s in "${thinkings[@]}"; do entries+=("[thinking] $s"); done
-  for s in "${pauseds[@]}";   do entries+=("[paused]   $s"); done
-
-  if [[ -n "$TMUX" ]]; then
-    local choice
-    choice=$(printf '%s\n' "${entries[@]}" \
-      | __fzf --prompt='jump to> ' \
-      | sed 's/^\[[a-z]*\] *//')
-    [[ -n "$choice" ]] && tmux switch-client -t "$choice"
-  else
-    printf '  %s\n' "${entries[@]}"
-  fi
-}
-
-cwf() {
-  local queue_dir; queue_dir=$(__cw_queue_dir) || return 1
-  [[ -z "$TMUX" ]] && echo "cwf must be run inside a tmux session" && return 1
-
-  local cwf_tty=$(tmux display-message -p '#{client_tty}')
-  local showing=""
-  echo "auto-focus mode (ctrl-c to stop)"
-  while true; do
-    local prompts=() idles=() thinkings=() pauseds=()
-    _cw_load_sessions "$queue_dir" prompts idles thinkings pauseds
-    local best="${prompts[1]:-${idles[1]:-${thinkings[1]:-${pauseds[1]}}}}"
-
-    if [[ -n "$best" && "$best" != "$showing" ]]; then
-      tmux switch-client -c "$cwf_tty" -t "$best"
-      showing="$best"
-      echo "switched to: $best"
-    elif [[ -z "$best" ]]; then
-      showing=""
-    fi
-
-    sleep 2
-  done
-}
-
 _cgt() { __git_complete_as switch }
 compdef _cgt cgt cgtf
 
 _cgtd() { _complete_worktree_branches }
 compdef _cgtd cgtd
-
-cwd() {
-  [[ -z "$TMUX" ]] && echo "cwd must be run inside a tmux session" && return 1
-  local session
-  session=$(tmux display-message -p '#{session_name}')
-  local f="$HOME/.claude/queue/$session"
-  if [[ -f "$f" ]]; then
-    local typ=""
-    read -r typ < "$f" 2>/dev/null
-    if [[ "$typ" == "paused" ]]; then
-      echo "already paused: $session"
-    else
-      echo paused > "$f"
-      echo "paused: $session (was $typ)"
-    fi
-  else
-    echo "not in queue: $session"
-  fi
-}

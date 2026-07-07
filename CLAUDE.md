@@ -11,9 +11,9 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/platform.zsh` — platform detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), and notification (`__notify`) abstractions
 - `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`), agent setup (`ainit`), and general aliases, loads zsh plugins
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
-- `zshrc/tmux.zsh` — tmux aliases (`tm` prefix), keybindings, and Claude queue status bar integration
+- `zshrc/tmux.zsh` — tmux aliases (`tm` prefix) and keybindings
 - `zshrc/tailscale.zsh` — Tailscale aliases (`ts` prefix), fzf device pickers, and `tsinit` for auth
-- `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and queue system (`cw`/`cwf`/`cwd`/`cinit`)
+- `zshrc/claude.zsh` — Claude Code aliases, worktree workflow (`cgt`/`cgtd`), and `cinit`
 - `zshrc/codex.zsh` — Codex CLI aliases (`co` prefix) and worktree workflow (`cogt`/`cogtf`/`cogtb`), mirroring the basics of `claude.zsh`
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
 - `zshrc/docker.zsh` — Docker aliases (`d` prefix), compose (`dc` prefix), fzf container/image pickers
@@ -41,10 +41,6 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - Prefer the **Edit tool** over `sed` for file modifications.
 - Prefer the **Read tool** over `cat`/`head`/`tail` for reading files.
 - Prefer the **Write tool** over `echo`/`cat` redirection for creating files.
-
-## Queue System
-
-File-based state in `~/.claude/queue/` tracks Claude Code session status across tmux sessions. Four priority levels: `prompt` > `idle` > `thinking` > `paused`. Hooks are written to `~/.claude/settings.json` by `ainit` via `cinit`. The tmux status bar shows counts (P/I/T/S) and `cwf` auto-focuses the highest-priority session.
 
 ## Setup
 

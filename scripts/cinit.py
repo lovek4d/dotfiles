@@ -7,15 +7,6 @@ if os.path.exists(path):
     with open(path) as f:
         settings = json.load(f)
 
-Q = 'D=$HOME/.claude/queue; mkdir -p "$D"; S=$(tmux display-message -p "#{session_name}" 2>/dev/null) || exit 0'
-
-def enqueue(typ, notify=True):
-    bell = 'printf "\\a"; tmux display-message "Claude %s: $S" 2>/dev/null' % typ if notify else ':'
-    return f"bash -c '{Q}; echo {typ} > \"$D/$S\"; {bell}'"
-
-dequeue = f"bash -c '{Q}; rm -f \"$D/$S\"'"
-to_thinking = f"bash -c '{Q}; f=\"$D/$S\"; if [ -f \"$f\" ] && read t < \"$f\" && [ \"$t\" = prompt ]; then echo thinking > \"$f\"; fi'"
-
 hooks_dir = os.path.expanduser("~/.claude/hooks")
 os.makedirs(hooks_dir, exist_ok=True)
 hook_src = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "claude/hooks/no-paths.py"))
@@ -40,16 +31,6 @@ settings["hooks"] = {
              {"type": "command", "command": no_paths_hook, "timeout": 5},
          ]}
     ],
-    "Notification": [
-        {"matcher": "permission_prompt|elicitation_dialog",
-         "hooks": [{"type": "command", "command": enqueue("prompt"), "timeout": 5}]},
-        {"matcher": "idle_prompt",
-         "hooks": [{"type": "command", "command": enqueue("idle"), "timeout": 5}]},
-    ],
-    "Stop":            [{"hooks": [{"type": "command", "command": enqueue("idle"),             "timeout": 5}]}],
-    "PostToolUse":     [{"hooks": [{"type": "command", "command": to_thinking,                 "timeout": 5}]}],
-    "UserPromptSubmit":[{"hooks": [{"type": "command", "command": enqueue("thinking", False),  "timeout": 5}]}],
-    "SessionEnd":      [{"hooks": [{"type": "command", "command": dequeue,                     "timeout": 5}]}],
 }
 
 readonly_perms = [
