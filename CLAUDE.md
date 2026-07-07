@@ -9,7 +9,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 ## Structure
 
 - `zshrc/platform.zsh` — platform detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), and notification (`__notify`) abstractions
-- `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines bootstrap (`zinit`), agent setup (`ainit`), and general aliases, loads zsh plugins
+- `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines general aliases, loads zsh plugins
+- `zshrc/bootstrap.zsh` — machine bootstrap (`zinit`) and agent setup (`ainit`)
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
 - `zshrc/tmux.zsh` — tmux aliases (`tm` prefix) and keybindings
 - `zshrc/agent-worktree.zsh` — shared Claude/Codex worktree + tmux workflow (`cgt`/`cogt`/`agtd`)
