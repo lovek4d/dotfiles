@@ -1,7 +1,8 @@
 __agent_worktree_session() {
-  local root="$1" target="$2" local_branch="$3" launch="$4"
+  local root="$1" target="$2" local_branch="$3" launch="$4" cleanup="${5:-1}"
   local session="${local_branch//\//-}"
-  local cmd="${launch}; cd '${root}' && git worktree remove '${target}'"
+  local cmd="$launch"
+  [[ "$cleanup" == 1 ]] && cmd="${launch}; cd '${root}' && git worktree remove '${target}'"
 
   if [[ -n "$TMUX" ]]; then
     tmux new-session -ds "$session" -c "$target" "$cmd"
@@ -53,9 +54,11 @@ EOF
   fi
 
   local target="$(__git_worktree_path "$local_branch" "$root")"
+  local cleanup=1
+  [[ -n "$(__git_worktree_for_branch "$local_branch")" ]] && cleanup=0
   mkdir -p "$(dirname "$target")"
-  __git_worktree_add "$local_branch" "$target" "$start_point" || return 1
-  __agent_worktree_session "$root" "$target" "$local_branch" "$launch"
+  target="$(__git_worktree_add "$local_branch" "$target" "$start_point")" || return 1
+  __agent_worktree_session "$root" "$target" "$local_branch" "$launch" "$cleanup"
 }
 
 cgt() { __agent_worktree claude cgt Claude "$1"; }
@@ -76,17 +79,15 @@ EOF
 
   git rev-parse --show-toplevel >/dev/null 2>&1 || { echo "not in a git repo" >&2; return 1; }
 
-  local selection
-  if [[ -n "$1" ]]; then
-    selection=$(git worktree list | tail -n +2 | awk -v b="[$1]" '$3==b')
-    [[ -z "$selection" ]] && echo "no worktree for branch: $1" >&2 && return 1
-  else
-    selection=$(git worktree list | tail -n +2 | __fzf --prompt='destroy worktree> ')
-    [[ -z "$selection" ]] && return 1
+  local branch="$1"
+  if [[ -z "$branch" ]]; then
+    branch=$(__git_worktree_branches | __fzf --prompt='destroy worktree> ')
+    [[ -z "$branch" ]] && return 1
   fi
 
-  local -a fields=("${(z)selection}")
-  local wt_path="$fields[1]" branch="${fields[3]//[\[\]]/}"
+  local wt_path="$(__git_resolve_worktree '' "$branch")" || return 1
+  branch="$(__git_worktree_branch_for_path "$wt_path")"
+  [[ -z "$branch" ]] && echo "no branch for worktree: $wt_path" >&2 && return 1
   local session="${branch//\//-}"
 
   tmux kill-session -t "$session" 2>/dev/null

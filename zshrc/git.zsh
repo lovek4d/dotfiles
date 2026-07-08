@@ -30,8 +30,11 @@ __git_resolve_worktree() {
     branch=$(__git_worktree_branches | __fzf --prompt="$prompt")
     [[ -z "$branch" ]] && return 1
   fi
+  local local_branch="$branch" start_point=""
+  __git_normalize_branch "$branch" local_branch start_point
   local wt="$(__git_worktree_for_branch "$branch")"
-  [[ -z "$wt" ]] && echo "no worktree for branch: $branch" >&2 && return 1
+  [[ -z "$wt" ]] && wt="$(__git_worktree_for_branch "$local_branch")"
+  [[ -z "$wt" ]] && echo "no worktree for branch: $local_branch" >&2 && return 1
   echo "$wt"
 }
 
@@ -332,23 +335,36 @@ __git_worktree_path() {
 
 __git_worktree_add() {
   local local_branch="$1" target="$2" start_point="$3"
+  local existing="$(__git_worktree_for_branch "$local_branch")"
+  if [[ -n "$existing" ]]; then
+    echo "$existing"
+    return 0
+  fi
   if git show-ref --verify --quiet "refs/heads/$local_branch"; then
-    git worktree add "$target" "$local_branch"
+    git worktree add "$target" "$local_branch" >/dev/null || return 1
   elif [[ -n "$start_point" ]]; then
-    git worktree add -b "$local_branch" "$target" "$start_point"
+    git worktree add -b "$local_branch" "$target" "$start_point" >/dev/null || return 1
   else
     if git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
-      git worktree add "$target" "$local_branch"
+      git worktree add "$target" "$local_branch" >/dev/null || return 1
     else
-      git worktree add -b "$local_branch" "$target" "$(__git_default_branch)"
+      git worktree add -b "$local_branch" "$target" "$(__git_default_branch)" >/dev/null || return 1
     fi
   fi
+  echo "$target"
 }
 
 __git_worktree_for_branch() {
   git worktree list --porcelain | awk -v b="refs/heads/$1" '
     /^worktree / { path=$2 }
     /^branch / && $2==b { print path }
+  '
+}
+
+__git_worktree_branch_for_path() {
+  git worktree list --porcelain | awk -v target="$1" '
+    /^worktree / { path=$2 }
+    /^branch / && path==target { sub("refs/heads/", "", $2); print $2 }
   '
 }
 
@@ -383,7 +399,7 @@ gwc() {
 
   local target="$(__git_worktree_path "$local_branch")"
   mkdir -p "$(dirname "$target")"
-  __git_worktree_add "$local_branch" "$target" "$start_point" || return 1
+  target="$(__git_worktree_add "$local_branch" "$target" "$start_point")" || return 1
   echo "Worktree at: $target"
 }
 
