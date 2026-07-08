@@ -19,17 +19,26 @@ CLOSER_WORD="${WHISPER_CLOSER_WORD:-send it}"
 CLOSER_FLAG="/tmp/whisper-closer-flag"
 CLOSER_RESULT="/tmp/whisper-closer-result"
 
-PREVIEW_ROW=3
+draw_preview() {
+  local preview="$1"
+  local cols width
+  cols=$(tput cols 2>/dev/null || echo 80)
+  width=$(( cols > 2 ? cols - 2 : 80 ))
+
+  tput clear 2>/dev/null || printf '\n'
+  if [[ -n "$TMUX" ]]; then
+    echo "[Whisper] Enter > paste | ESC > copy | 'send it' > submit | ^C > quit"
+  else
+    echo "[Whisper] Enter/ESC/'send it' > copy | ^C > quit"
+  fi
+  echo "[Whisper] live preview:"
+  echo ""
+  printf '%s' "$preview" | fold -s -w "$width"
+}
 
 trap 'kill -INT $REC_PID $POLL_PID 2>/dev/null; wait $REC_PID $POLL_PID 2>/dev/null; rm -f "$TMPRAW" "$TMPFILE" "$TMPCHUNK" "$TMPCHUNK16" "$CLOSER_FLAG" "$CLOSER_RESULT"' EXIT
 
-if [[ -n "$TMUX" ]]; then
-  echo "[Whisper] Enter > paste | ESC > copy | 'send it' > submit | ^C > quit"
-else
-  echo "[Whisper] Enter/ESC/'send it' > copy | ^C > quit"
-fi
-echo "[Whisper] live preview:"
-echo ""
+draw_preview ""
 
 rm -f "$CLOSER_FLAG" "$CLOSER_RESULT"
 rec -q "$TMPRAW" &
@@ -46,12 +55,7 @@ REC_PID=$!
       | grep -v '\[BLANK_AUDIO\]' | grep -v '^[[:space:]]*$' \
       | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     if [[ -n "$preview" ]]; then
-      cols=$(tput cols 2>/dev/null || echo 80)
-      tput cup "$PREVIEW_ROW" 0
-      tput ed
-      # cols - 2: fold -s can leave a trailing space that pushes the next word
-      # to a new line, so we need a 2-column margin on the terminal width
-      printf '%s' "$preview" | fold -s -w $(( cols - 2 ))
+      draw_preview "$preview"
       if echo "$preview" | grep -qiE "(^|[[:space:]])${CLOSER_WORD}([[:punct:]]*([[:space:]]|$))"; then
         printf '%s' "$preview" \
           | sed -E "s/(^|[[:space:]])${CLOSER_WORD}[[:punct:]]*([[:space:]]|$)/\1\2/gI" \
@@ -88,7 +92,7 @@ kill -INT "$REC_PID" 2>/dev/null
 wait "$REC_PID" 2>/dev/null
 kill "$POLL_PID" 2>/dev/null
 wait "$POLL_PID" 2>/dev/null
-tput cup "$PREVIEW_ROW" 0; tput ed
+tput clear 2>/dev/null || printf '\n'
 
 if [[ "$closer_triggered" == true ]]; then
   result=$(cat "$CLOSER_RESULT" 2>/dev/null)
