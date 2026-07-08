@@ -3,6 +3,12 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 shopt -s expand_aliases
 source "$HOME/dev/dotfiles/zshrc/platform.zsh"
 
+case "${1:-}" in
+  -h|--help) echo "usage: record.sh"; exit 0 ;;
+  "") ;;
+  *) echo "usage: record.sh" >&2; exit 1 ;;
+esac
+
 TMPRAW="/tmp/whisper-rec-raw.wav"
 TMPFILE="/tmp/whisper-rec.wav"
 TMPCHUNK="/tmp/whisper-chunk-raw.wav"
@@ -13,9 +19,16 @@ CLOSER_WORD="${WHISPER_CLOSER_WORD:-send it}"
 CLOSER_FLAG="/tmp/whisper-closer-flag"
 CLOSER_RESULT="/tmp/whisper-closer-result"
 
+PREVIEW_ROW=3
+
 trap 'kill -INT $REC_PID $POLL_PID 2>/dev/null; wait $REC_PID $POLL_PID 2>/dev/null; rm -f "$TMPRAW" "$TMPFILE" "$TMPCHUNK" "$TMPCHUNK16" "$CLOSER_FLAG" "$CLOSER_RESULT"' EXIT
 
-echo "[Whisper] Enter > C/P | ESC > copy | 'send it' > submit | ^C > quit"
+if [[ -n "$TMUX" ]]; then
+  echo "[Whisper] Enter > paste | ESC > copy | 'send it' > submit | ^C > quit"
+else
+  echo "[Whisper] Enter/ESC/'send it' > copy | ^C > quit"
+fi
+echo "[Whisper] live preview:"
 echo ""
 
 rm -f "$CLOSER_FLAG" "$CLOSER_RESULT"
@@ -34,7 +47,7 @@ REC_PID=$!
       | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     if [[ -n "$preview" ]]; then
       cols=$(tput cols 2>/dev/null || echo 80)
-      tput cup 2 0
+      tput cup "$PREVIEW_ROW" 0
       tput ed
       # cols - 2: fold -s can leave a trailing space that pushes the next word
       # to a new line, so we need a 2-column margin on the terminal width
@@ -75,7 +88,7 @@ kill -INT "$REC_PID" 2>/dev/null
 wait "$REC_PID" 2>/dev/null
 kill "$POLL_PID" 2>/dev/null
 wait "$POLL_PID" 2>/dev/null
-tput cup 2 0; tput ed
+tput cup "$PREVIEW_ROW" 0; tput ed
 
 if [[ "$closer_triggered" == true ]]; then
   result=$(cat "$CLOSER_RESULT" 2>/dev/null)
@@ -113,9 +126,12 @@ echo ""
 
 case "$key" in
   "")
-    # Enter: paste + copy
     printf '%s' "$result" | clipcopy
-    tmux send-keys -l -- "$result" 2>/dev/null
+    if [[ -n "$TMUX" ]]; then
+      tmux send-keys -l -- "$result" 2>/dev/null
+    else
+      echo "Copied to clipboard."
+    fi
     ;;
   $'\e')
     # Escape: copy only

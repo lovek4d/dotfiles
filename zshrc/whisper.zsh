@@ -1,13 +1,13 @@
 w() {
   cat <<'EOF'
 whisper aliases:
-  winit   install whisper-cli, sox, hammerspoon; download model
+  winit   install whisper-cli + sox; download model
   wstart  start recording (Enter to stop and transcribe)
   wstop   kill a stuck recording
 
 hotkey
   prefix+v      tmux popup (both platforms)
-  ctrl+shift+v  global popup (macOS, via Hammerspoon)
+  macOS global  bind a Shortcut to scripts/whisper/window.command
 
 model: ggml-large-v3-turbo (~809MB, in ~/.whisper/models/)
 EOF
@@ -18,19 +18,13 @@ winit() {
 
   if __is_macos; then
     echo "=== whisper deps (brew) ==="
-    for pkg in whisper-cpp sox hammerspoon; do
+    for pkg in whisper-cpp sox; do
       if brew list "$pkg" &>/dev/null; then
         echo "$pkg already installed"
       else
         brew install "$pkg"
       fi
     done
-
-    echo "=== hammerspoon config ==="
-    mkdir -p ~/.hammerspoon
-    ln -sf "$HOME/dev/dotfiles/configs/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua"
-    echo "symlinked configs/hammerspoon/init.lua → ~/.hammerspoon/init.lua"
-    echo "  open Hammerspoon, grant Accessibility permission, reload config"
 
   elif __is_linux; then
     if ! command -v whisper-cli &>/dev/null; then
@@ -57,7 +51,7 @@ winit() {
   fi
 
   echo "whisper ready"
-  __is_macos && echo "  global hotkey: ctrl+shift+v (Hammerspoon)"
+  __is_macos && echo "  global hotkey: bind a Shortcut to ~/dev/dotfiles/scripts/whisper/window.command"
   echo "  tmux hotkey:   prefix+v"
 }
 
