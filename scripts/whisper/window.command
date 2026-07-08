@@ -1,3 +1,2 @@
 #!/usr/bin/env zsh
-source "$HOME/dev/dotfiles/zshrc/init.zsh"
-wstart
+exec "$HOME/dev/dotfiles/scripts/whisper/record.sh"
