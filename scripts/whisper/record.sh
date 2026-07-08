@@ -14,11 +14,23 @@ TMPRAW="$RUN_DIR/whisper-rec-raw.wav"
 TMPFILE="$RUN_DIR/whisper-rec.wav"
 TMPCHUNK="$RUN_DIR/whisper-chunk-raw.wav"
 TMPCHUNK16="$RUN_DIR/whisper-chunk-16k.wav"
-MODEL="${WHISPER_MODEL:-$HOME/.whisper/models/ggml-large-v3-turbo.bin}"
+FINAL_MODEL="${WHISPER_MODEL:-$HOME/.whisper/models/ggml-large-v3-turbo.bin}"
+DEFAULT_PREVIEW_MODEL="$HOME/.whisper/models/ggml-small.en.bin"
+PREVIEW_MODEL="${WHISPER_PREVIEW_MODEL:-$DEFAULT_PREVIEW_MODEL}"
+[[ -f "$PREVIEW_MODEL" ]] || PREVIEW_MODEL="$FINAL_MODEL"
+PREVIEW_INTERVAL="${WHISPER_PREVIEW_INTERVAL:-1}"
 PROMPT="${WHISPER_PROMPT:-Engineering discussion, some general use.}"
 CLOSER_WORD="${WHISPER_CLOSER_WORD:-send it}"
 CLOSER_FLAG="$RUN_DIR/closer-flag"
 CLOSER_RESULT="$RUN_DIR/closer-result"
+
+model_label() {
+  basename "${1%.bin}" | sed 's/^ggml-//'
+}
+
+if ! [[ "$PREVIEW_INTERVAL" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  PREVIEW_INTERVAL=2
+fi
 
 draw_preview() {
   local preview="$1"
@@ -32,14 +44,14 @@ draw_preview() {
   else
     echo "[Whisper] Enter/ESC/'$CLOSER_WORD' > copy | ^C > quit"
   fi
-  echo "[Whisper] live preview:"
+  echo "[Whisper] live preview ($(model_label "$PREVIEW_MODEL")):"
   echo ""
   printf '%s' "$preview" | fold -s -w "$width"
 }
 
 transcribe_file() {
-  local file="$1" joiner="${2- }"
-  whisper-cli -m "$MODEL" -f "$file" --no-timestamps -l en --prompt "$PROMPT" 2>/dev/null \
+  local file="$1" joiner="${2- }" model="${3:-$FINAL_MODEL}"
+  whisper-cli -m "$model" -f "$file" --no-timestamps -l en --prompt "$PROMPT" 2>/dev/null \
     | grep -v '\[BLANK_AUDIO\]' | grep -v '^[[:space:]]*$' \
     | { if [[ -z "$joiner" ]]; then tr -d '\n\r'; else tr '\n\r' "$joiner"; fi; } \
     | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
@@ -92,14 +104,14 @@ draw_preview ""
 rec -q "$TMPRAW" &
 REC_PID=$!
 
-# Periodic preview: snapshot + transcribe every 5s
+# Periodic preview: snapshot + transcribe every few seconds.
 (
   while kill -0 $REC_PID 2>/dev/null; do
-    sleep 5
+    sleep "$PREVIEW_INTERVAL"
     kill -0 $REC_PID 2>/dev/null || break
     cp "$TMPRAW" "$TMPCHUNK" 2>/dev/null
     sox --ignore-length "$TMPCHUNK" -r 16000 -b 16 -c 1 -e signed-integer "$TMPCHUNK16" 2>/dev/null || continue
-    preview=$(transcribe_file "$TMPCHUNK16" "")
+    preview=$(transcribe_file "$TMPCHUNK16" "" "$PREVIEW_MODEL")
     if [[ -n "$preview" ]]; then
       draw_preview "$preview"
       if has_closer_word "$preview"; then
@@ -138,7 +150,12 @@ wait "$POLL_PID" 2>/dev/null
 tput clear 2>/dev/null || printf '\n'
 
 if [[ "$closer_triggered" == true ]]; then
-  result=$(cat "$CLOSER_RESULT" 2>/dev/null)
+  echo "Transcribing..."
+  sox "$TMPRAW" -r 16000 -b 16 -c 1 -e signed-integer "$TMPFILE" 2>/dev/null
+  rm -f "$TMPRAW"
+
+  result=$(strip_closer_word "$(transcribe_file "$TMPFILE" " " "$FINAL_MODEL")")
+  [[ -n "$result" ]] || result=$(cat "$CLOSER_RESULT" 2>/dev/null)
   if [[ -z "$result" ]]; then
     echo "No speech detected."
     exit 0

@@ -1,15 +1,20 @@
 w() {
   cat <<'EOF'
 whisper aliases:
-  winit   install whisper-cli + sox; download model
-  wstart  start recording (Enter to stop and transcribe)
+  winit   install whisper-cli + sox; download models
+  wstart  start recording (small.en preview, turbo final)
   wstop   kill a stuck recording
 
 hotkey
   prefix+v      tmux popup (both platforms)
   macOS global  bind a Shortcut to scripts/whisper/window.command
 
-model: ggml-large-v3-turbo (~809MB, in ~/.whisper/models/)
+models:
+  final transcription: ggml-large-v3-turbo (~1.5GB)
+  live preview:        ggml-small.en (~488MB, falls back to final if missing)
+
+tuning:
+  WHISPER_PREVIEW_INTERVAL=1.5 wstart
 EOF
 }
 
@@ -41,13 +46,22 @@ winit() {
     fi
   fi
 
-  local model="$HOME/.whisper/models/ggml-large-v3-turbo.bin"
-  if [[ -f "$model" ]]; then
-    echo "model already downloaded"
+  local final_model="$HOME/.whisper/models/ggml-large-v3-turbo.bin"
+  if [[ -f "$final_model" ]]; then
+    echo "final model already downloaded"
   else
-    echo "downloading ggml-large-v3-turbo (~809MB)..."
+    echo "downloading ggml-large-v3-turbo (~1.5GB)..."
     curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin" \
-      -o "$model" --progress-bar
+      -o "$final_model" --progress-bar
+  fi
+
+  local preview_model="$HOME/.whisper/models/ggml-small.en.bin"
+  if [[ -f "$preview_model" ]]; then
+    echo "preview model already downloaded"
+  else
+    echo "downloading ggml-small.en (~488MB)..."
+    curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin" \
+      -o "$preview_model" --progress-bar
   fi
 
   echo "whisper ready"
