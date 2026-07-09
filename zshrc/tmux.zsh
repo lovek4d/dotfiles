@@ -1,9 +1,37 @@
+__tmux_session_exists() {
+  tmux has-session -t "$1" 2>/dev/null
+}
+
 __tmux_jump() {
   if [[ -n "$TMUX" ]]; then
     tmux switch-client -t "$1"
   else
     tmux attach -t "$1"
   fi
+}
+
+__tmux_new_session() {
+  local session="$1" cwd="${2:-}" cmd="${3:-}"
+  local args=(-ds "$session")
+  [[ -n "$cwd" ]] && args+=(-c "$cwd")
+
+  if [[ -n "$cmd" ]]; then
+    tmux new-session "${args[@]}" "$cmd"
+  else
+    tmux new-session "${args[@]}"
+  fi
+}
+
+__tmux_ensure_session() {
+  local session="$1" cwd="${2:-}" cmd="${3:-}"
+  if ! __tmux_session_exists "$session"; then
+    __tmux_new_session "$session" "$cwd" "$cmd" || return 1
+  fi
+  __tmux_jump "$session"
+}
+
+__tmux_kill_session() {
+  tmux kill-session -t "$1" 2>/dev/null
 }
 
 tm() {
@@ -18,7 +46,7 @@ tmux aliases:
     tmd  detach
     tmk  kill session (fzf)
     tml  list-sessions
-    tmn  new session <name>
+    tmn  new or switch session <name>
     tms  switch session (fzf)
 
   panes
@@ -63,12 +91,12 @@ alias tmrpd='tmux resize-pane -D 5'
 alias tmrpl='tmux resize-pane -L 5'
 alias tmrpr='tmux resize-pane -R 5'
 
-## create named session (avoids nesting)
+## create or switch to named session (avoids nesting)
 tmn() {
   if [[ -z "$1" ]]; then
     echo "usage: tmn <name>" && return 1
   fi
-  tmux new-session -ds "$1" && __tmux_jump "$1"
+  __tmux_ensure_session "$1"
 }
 
 _tmux_pick_session() {
@@ -100,11 +128,11 @@ _tmb_notify() {
 tmb() {
   [[ -z "$1" ]] && echo "usage: tmb <command...>" && return 1
   local name="bg-${(j:_:)${(@s: :)*}[1,3]}"
-  if tmux has-session -t "$name" 2>/dev/null; then
+  if __tmux_session_exists "$name"; then
     echo "already running $name" && return 1
   fi
-  tmux new-session -ds "$name" \; \
-    send-keys -t "$name" "$*; _tmb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
+  __tmux_new_session "$name" || return 1
+  tmux send-keys -t "$name" "$*; _tmb_notify \$? '${*//\'/\'\\\'\'}' '$name'" Enter
   echo "running in '$name'"
 }
 
@@ -112,5 +140,5 @@ tmb() {
 tmk() {
   local session=${1:-$(_tmux_pick_session 'kill session> ')}
   [[ -z "$session" ]] && return 1
-  tmux kill-session -t "$session"
+  __tmux_kill_session "$session"
 }

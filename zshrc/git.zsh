@@ -72,6 +72,10 @@ __git_default_branch() {
   echo "${b:-main}"
 }
 
+__git_branch_slug() {
+  echo "${1//\//-}"
+}
+
 # setup
 ginit() {
   local name email changed=0

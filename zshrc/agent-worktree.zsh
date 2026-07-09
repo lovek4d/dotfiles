@@ -1,15 +1,10 @@
 __agent_worktree_session() {
   local root="$1" target="$2" local_branch="$3" launch="$4" cleanup="${5:-1}"
-  local session="${local_branch//\//-}"
+  local session="$(__git_branch_slug "$local_branch")"
   local cmd="$launch"
   [[ "$cleanup" == 1 ]] && cmd="${launch}; cd '${root}' && git worktree remove '${target}'"
 
-  if [[ -n "$TMUX" ]]; then
-    tmux new-session -ds "$session" -c "$target" "$cmd"
-    tmux switch-client -t "$session"
-  else
-    tmux new-session -s "$session" -c "$target" "$cmd"
-  fi
+  __tmux_ensure_session "$session" "$target" "$cmd"
 }
 
 __agent_worktree() {
@@ -43,13 +38,9 @@ EOF
   __git_normalize_branch "$branch" local_branch start_point
   [[ -z "$start_point" ]] && start_point=HEAD
 
-  local session="${local_branch//\//-}"
-  if tmux has-session -t "$session" 2>/dev/null; then
-    if [[ -n "$TMUX" ]]; then
-      tmux switch-client -t "$session"
-    else
-      tmux attach-session -t "$session"
-    fi
+  local session="$(__git_branch_slug "$local_branch")"
+  if __tmux_session_exists "$session"; then
+    __tmux_jump "$session"
     return 0
   fi
 
@@ -88,9 +79,9 @@ EOF
   local wt_path="$(__git_resolve_worktree '' "$branch")" || return 1
   branch="$(__git_worktree_branch_for_path "$wt_path")"
   [[ -z "$branch" ]] && echo "no branch for worktree: $wt_path" >&2 && return 1
-  local session="${branch//\//-}"
+  local session="$(__git_branch_slug "$branch")"
 
-  tmux kill-session -t "$session" 2>/dev/null
+  __tmux_kill_session "$session"
   git worktree remove "$wt_path"
   echo "destroyed worktree: $branch ($wt_path)"
 }
