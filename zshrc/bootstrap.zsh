@@ -87,7 +87,7 @@ ainit() {
 }
 
 zinit() {
-  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd)
+  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr)
 
   if __is_macos; then
     _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale fd

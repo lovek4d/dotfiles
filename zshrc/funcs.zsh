@@ -52,6 +52,12 @@ port() {
   kill "$pid" && echo "killed $pid"
 }
 
+# rerun a python file on change, clearing the screen each time
+py_watch() {
+  [[ -z "$1" ]] && echo "usage: py_watch <file.py>" && return 1
+  echo "$1" | entr -cc python3 "$1"
+}
+
 # delayed enter — sleep N minutes then press Enter, keeping mac awake
 denter() {
   [[ -z "$1" ]] && echo "usage: denter <minutes>" && return 1
