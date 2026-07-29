@@ -4,6 +4,43 @@
 - NEVER use `git -C <path>` when `<path>` is the current working directory — just run `git` directly
 - When running Bash commands, use paths relative to the current working directory. Do not prefix commands with the absolute path of the working directory.
 
+## Asking Me Questions
+
+**Always use the AskUserQuestion tool.** Never ask in prose — a question buried in
+a paragraph gets skimmed, answered "yes", or missed entirely. If you need
+something from me, it goes through the tool.
+
+- **One question per call.** Multiple at once is bewildering. Resolve dependent
+  decisions in order.
+- **Recommend first.** Put your pick as option 1, suffixed `(Recommended)`.
+- **Answer it yourself if you can.** A question the codebase answers is a
+  question you should have grepped, not asked.
+- **Use `preview` when the options differ in shape** — layout, control flow,
+  API surface, file structure. Show the thing, don't describe it: an ASCII
+  flowchart or a code snippet per option, side by side. Previews are
+  single-select only.
+- **Blocking questions are last resort.** Do everything independent of the
+  answer first, then ask.
+
+Preview example — two options, same question:
+
+```
+      option A                        option B
+  ┌──────────────┐               ┌──────────────┐
+  │  hook (sync) │               │  hook (bg)   │
+  └──────┬───────┘               └──────┬───────┘
+         │ blocks                       │ fire & forget
+         ▼                              ▼
+     [ tool runs ]                  [ tool runs ]
+```
+
+```zsh
+# A: blocking
+__notify "done" && exit 0
+# B: background
+__notify "done" &
+```
+
 ## Git Command Grouping
 - **Group state-changing git commands** into a single `&&`-chained Bash call to minimize permission prompts:
   - Committing: `git add <files> && git commit -m "..."` (one call, not two)
