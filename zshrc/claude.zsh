@@ -27,6 +27,7 @@ cinit() {
   echo "claude settings.json updated (git allowlist + no-paths hook)"
   echo "~/.claude/CLAUDE.md -> $HOME/dev/dotfiles/configs/AGENTS.md"
   echo "~/.claude/hooks/no-paths.py -> $HOME/dev/dotfiles/scripts/claude/hooks/no-paths.py"
+  echo "~/.claude/skills/, ~/.codex/skills/ -> $HOME/dev/dotfiles/configs/agents/skills/*"
 }
 
 alias cn='claude'

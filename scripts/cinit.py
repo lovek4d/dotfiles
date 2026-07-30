@@ -127,3 +127,24 @@ settings["showClearContextOnPlanAccept"] = True
 
 with open(path, "w") as f:
     json.dump(settings, f, indent=2)
+
+# repo-authored skills -> every agent's skills dir; adding a skill needs no edit here
+skills_src = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), os.pardir, "configs/agents/skills"))
+skills = sorted(d for d in os.listdir(skills_src)
+                if os.path.isdir(os.path.join(skills_src, d))) if os.path.isdir(skills_src) else []
+
+for agent_skills in ("~/.claude/skills", "~/.codex/skills"):
+    dst_dir = os.path.expanduser(agent_skills)
+    os.makedirs(dst_dir, exist_ok=True)
+    # drop links into our skills dir whose source is gone; leave npx-managed ones alone
+    for entry in os.listdir(dst_dir):
+        dst = os.path.join(dst_dir, entry)
+        if (os.path.islink(dst) and entry not in skills
+                and os.path.realpath(dst).startswith(skills_src + os.sep)):
+            os.remove(dst)
+    for name in skills:
+        dst = os.path.join(dst_dir, name)
+        if os.path.lexists(dst):
+            os.remove(dst)
+        os.symlink(os.path.join(skills_src, name), dst)

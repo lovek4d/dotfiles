@@ -20,9 +20,10 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/vim.zsh` — vim config (sets `VIMINIT` to point at repo)
 - `zshrc/docker.zsh` — Docker aliases (`d` prefix), compose (`dc` prefix), fzf container/image pickers
 - `zshrc/ssh.zsh` — SSH passthrough (`s`), fzf host picker (`ss`), key bootstrap (`sinit`), agent auto-load
-- `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`)
+- `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`, `py_watch`, `denter`)
 - `zshrc/local/*.zsh` — machine-specific extensions (gitignored, not tracked)
 - `configs/AGENTS.md` — global Claude Code / agent rules (symlinked to `~/.claude/CLAUDE.md`)
+- `configs/agents/skills/*/SKILL.md` — hand-authored agent skills; `cinit` symlinks each into both `~/.claude/skills/` and `~/.codex/skills/` (npx-managed skills in `~/.agents/skills/` are left untouched)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
 - `configs/vimrc` — vim config (persistent undo)
 

@@ -74,6 +74,8 @@ zshrc aliases:
     redact-json  redact JSON from clipboard
     pk           fzf process killer
     port <n>     show/kill process on port
+    py_watch <f> rerun a python file on change
+    denter <min> sleep N min (mac awake), then press Enter
   local
     zshrc/local/*.zsh  machine-specific extensions (gitignored)
   helpers
