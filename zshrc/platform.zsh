@@ -25,3 +25,17 @@ __notify() {
     notify-send "$title" "$msg"
   fi
 }
+
+## symlink a repo config into place, replacing an existing link.
+## Refuses to clobber a real file; announces what it linked.
+__link_config() {
+  local src="$1" dest="$2"
+  [[ -e "$src" ]] || { echo "link: missing source $src" >&2; return 1; }
+  if [[ -e "$dest" && ! -L "$dest" ]]; then
+    echo "link: $dest exists and is not a symlink — leaving it alone" >&2
+    return 1
+  fi
+  mkdir -p "${dest:h}" || return 1
+  ln -sfn "$src" "$dest" || return 1
+  echo "symlinked $dest -> $src"
+}

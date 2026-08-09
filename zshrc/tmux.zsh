@@ -78,8 +78,7 @@ EOF
 
 ## symlink ~/.tmux.conf → repo config
 tminit() {
-  ln -sf ~/dev/dotfiles/configs/tmux.conf ~/.tmux.conf
-  echo "symlinked ~/dev/dotfiles/configs/tmux.conf → ~/.tmux.conf"
+  __link_config "$HOME/dev/dotfiles/configs/tmux.conf" "$HOME/.tmux.conf" || return 1
   tmux source-file ~/.tmux.conf 2>/dev/null && echo "config reloaded"
 }
 

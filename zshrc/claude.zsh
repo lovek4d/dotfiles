@@ -22,12 +22,8 @@ EOF
 }
 
 cinit() {
-  ln -sf "$HOME/dev/dotfiles/configs/AGENTS.md" "$HOME/.claude/CLAUDE.md" || return 1
+  __link_config "$HOME/dev/dotfiles/configs/AGENTS.md" "$HOME/.claude/CLAUDE.md" || return 1
   python3 "$HOME/dev/dotfiles/scripts/cinit.py" || return 1
-  echo "claude settings.json updated (git allowlist + no-paths hook)"
-  echo "~/.claude/CLAUDE.md -> $HOME/dev/dotfiles/configs/AGENTS.md"
-  echo "~/.claude/hooks/no-paths.py -> $HOME/dev/dotfiles/scripts/claude/hooks/no-paths.py"
-  echo "~/.claude/skills/, ~/.codex/skills/ -> $HOME/dev/dotfiles/configs/agents/skills/*"
 }
 
 alias cn='claude'
