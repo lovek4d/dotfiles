@@ -55,6 +55,7 @@ zshrc aliases:
   general
     dev          cd ~/dev
     python       python3
+    sudo         sudo (expands aliases after it)
     wdvenv       source .venv/bin/activate
   navigation
     j <dir>  zoxide jump
@@ -69,6 +70,8 @@ zshrc aliases:
     zup    zvim + zsrc
     zvim   edit .zshrc
   misc
+    clipcopy     copy stdin to clipboard (pbcopy/xclip)
+    clippaste    paste clipboard to stdout
     redact-json  redact JSON from clipboard
     pk           fzf process killer
     port <n>     show/kill process on port
