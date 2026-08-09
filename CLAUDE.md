@@ -8,7 +8,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Structure
 
-- `zshrc/platform.zsh` — platform detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), and notification (`__notify`) abstractions
+- `zshrc/platform.zsh` — platform abstractions: detection (`__is_macos`/`__is_linux`), clipboard (`clipcopy`/`clippaste`), notification (`__notify`), wake-lock (`__keep_awake`), key injection (`__press_enter`), path resolution (`__first_file`), config symlinks (`__link_config`). Also sourced by `scripts/whisper/record.sh` under bash — keep bash-parseable
+- `zshrc/pick.zsh` — `__fzf` + `__pick`, the one selection seam every domain module uses
 - `zshrc/init.zsh` — entrypoint; sources platform.zsh first, sets up completions, sources all other zshrc files, defines general aliases, loads zsh plugins
 - `zshrc/bootstrap.zsh` — machine bootstrap (`zinit`) and agent setup (`ainit`)
 - `zshrc/git.zsh` — git aliases and fzf-powered branch/stash/worktree helpers
@@ -23,6 +24,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 - `zshrc/funcs.zsh` — misc utilities (`redact-json`, `pk`, `port`, `py_watch`, `denter`)
 - `zshrc/local/*.zsh` — machine-specific extensions (gitignored, not tracked)
 - `configs/AGENTS.md` — global Claude Code / agent rules (symlinked to `~/.claude/CLAUDE.md`)
+- `configs/claude-permissions.json` — Claude Code allow/deny lists, merged into `~/.claude/settings.json` by `cinit.py`
+- `tests/` — zsh test suite; `tests/run.zsh [filter]` runs it
 - `configs/agents/skills/*/SKILL.md` — hand-authored agent skills; `cinit` symlinks each into both `~/.claude/skills/` and `~/.codex/skills/` (npx-managed skills in `~/.agents/skills/` are left untouched)
 - `configs/tmux.conf` — tmux config (extended-keys, shift+enter support)
 - `configs/vimrc` — vim config (persistent undo)
@@ -30,7 +33,8 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 ## Conventions
 
 - **Help functions as passthroughs**: `g`, `tm`, `ts`, `c`, `co`, `d`, `v`, `s`, `z` print help when called with no args, otherwise delegate to the underlying tool (e.g., `g log` → `git log`). Each domain's help text is the canonical alias reference.
-- **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise present an fzf selector (e.g., `gsw`, `tms`, `gmn`, `gdb`).
+- **fzf pattern**: Functions that accept an optional argument use it directly if given, otherwise pipe a list into `__pick` (e.g., `gsw`, `tms`, `gdb`, `dlog`). Never call `__fzf` directly — `__pick` owns the empty/cancelled contract, returning non-zero so callers can `|| return 1`.
+- **Testing**: `tests/run.zsh`. Modules invoke external tools as a bare command word — that word is the seam. `stub git` shadows it with a recording function; assert with `assert_called`. Avoid `xargs` in module code: it spawns a new process, so stubs do not apply and tests hit the real binary.
 - **`__git_default_branch()`**: Auto-detects `main` vs `master` — used by `gmm`, `gdm`, `gswm`.
 - **Platform abstraction**: Use `clipcopy`/`clippaste` instead of `pbcopy`/`pbpaste`, and `__notify` instead of `osascript`. Platform helpers live in `zshrc/platform.zsh`.
 - **Zoxide navigation**: `j`/`ji` for directory jumping (uses `--cmd j` to avoid conflict with `z` help function).

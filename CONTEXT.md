@@ -15,3 +15,15 @@ _Avoid_: setup, install script
 **Whisper transcription**:
 Capturing local speech, transcribing it with whisper-cli, and delivering the resulting text to the active workflow.
 _Avoid_: Hammerspoon transcription
+
+**Picker**:
+The shared selection step every domain module reaches for — a list on stdin, an fzf prompt, one chosen line out. Lives in `zshrc/pick.zsh` as `__pick`.
+_Avoid_: fzf helper, selector, chooser
+
+**Config link**:
+A symlink from a repo-tracked config into `$HOME`, created by `__link_config`. Replaces an existing link; never clobbers a real file.
+_Avoid_: dotfile symlink, install step
+
+**Command seam**:
+The bare command word (`git`, `tmux`, `docker`, `fzf`) through which a module reaches an external tool. Tests shadow it with a recording stub; the interactive shell gets the real binary.
+_Avoid_: shell out, mock
