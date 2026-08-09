@@ -99,14 +99,13 @@ tmn() {
   __tmux_ensure_session "$1"
 }
 
-_tmux_pick_session() {
-  tmux list-sessions -F '#{session_name}' 2>/dev/null \
-    | __fzf --prompt="${1:-session> }"
+_tmux_sessions() {
+  tmux list-sessions -F '#{session_name}' 2>/dev/null
 }
 
 ## switch session (inline or fzf select)
 tms() {
-  local session=${1:-$(_tmux_pick_session 'switch session> ')}
+  local session=${1:-$(_tmux_sessions | __pick 'switch session> ')}
   [[ -z "$session" ]] && return 1
   __tmux_jump "$session"
 }
@@ -138,7 +137,7 @@ tmb() {
 
 ## kill session (inline or fzf select)
 tmk() {
-  local session=${1:-$(_tmux_pick_session 'kill session> ')}
+  local session=${1:-$(_tmux_sessions | __pick 'kill session> ')}
   [[ -z "$session" ]] && return 1
   __tmux_kill_session "$session"
 }

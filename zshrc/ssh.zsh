@@ -38,7 +38,7 @@ sc() {
     return
   fi
   local host
-  host=$(awk '/^Host / && !/\*/ { print $2 }' ~/.ssh/config 2>/dev/null | __fzf --prompt="ssh> ") || return 0
+  host=$(awk '/^Host / && !/\*/ { print $2 }' ~/.ssh/config 2>/dev/null | __pick 'ssh> ') || return 1
   ssh "$host"
 }
 
@@ -79,7 +79,7 @@ ska() {
     return
   fi
   local keyfile
-  keyfile=$(ls "$HOME/.ssh/"id_* 2>/dev/null | grep -v '\.pub$' | __fzf --prompt="key> ") || return 0
+  keyfile=$(print -rl -- "$HOME/.ssh/"id_*(N) | grep -v '\.pub$' | __pick 'key> ') || return 1
   ssh-add "$keyfile"
 }
 

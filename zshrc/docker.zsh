@@ -8,16 +8,12 @@ else
 fi
 
 # helpers
-# usage: _d_pick <prompt> <docker-cmd-args...> [-- <fzf-args...>]
-_d_pick() {
-  local prompt="${1:-container> }"; shift
-  local dcmd_args=() fzf_args=() past_sep=0
-  for arg in "$@"; do
-    if [[ "$arg" == "--" ]]; then past_sep=1; continue; fi
-    if (( past_sep )); then fzf_args+=("$arg"); else dcmd_args+=("$arg"); fi
-  done
-  _dcmd "${dcmd_args[@]}" 2>/dev/null | __fzf --prompt="$prompt" "${fzf_args[@]}"
-}
+## list producer for the pickers: docker output, errors muted
+## usage: _d_ls <docker-args...> | __pick <prompt> [fzf-args...]
+_d_ls() { _dcmd "$@" 2>/dev/null; }
+
+_d_running() { _d_ls ps --format '{{.Names}}'; }
+_d_stopped() { _d_ls ps -a --filter 'status=exited' --format '{{.Names}}'; }
 
 # core
 d() {
@@ -71,31 +67,31 @@ dpsa() { _dcmd ps -a "$@"; }
 drun() { _dcmd run -it --rm "$@"; }
 
 dlog() {
-  local ctr=${1:-$(_d_pick 'logs> '    ps --format '{{.Names}}')}
+  local ctr=${1:-$(_d_running | __pick 'logs> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd logs -f "$ctr"
 }
 
 dex() {
-  local ctr=${1:-$(_d_pick 'exec> '    ps --format '{{.Names}}')}
+  local ctr=${1:-$(_d_running | __pick 'exec> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd exec -it "$ctr" /bin/sh
 }
 
 dst() {
-  local ctr=${1:-$(_d_pick 'stop> '    ps --format '{{.Names}}')}
+  local ctr=${1:-$(_d_running | __pick 'stop> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd stop "$ctr"
 }
 
 dsta() {
-  local ctr=${1:-$(_d_pick 'start> '   ps -a --filter 'status=exited' --format '{{.Names}}')}
+  local ctr=${1:-$(_d_stopped | __pick 'start> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd start "$ctr"
 }
 
 drs() {
-  local ctr=${1:-$(_d_pick 'restart> ' ps --format '{{.Names}}')}
+  local ctr=${1:-$(_d_running | __pick 'restart> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd restart "$ctr"
 }
@@ -106,9 +102,8 @@ drm() {
     return
   fi
   local ctrs
-  ctrs=$(_d_pick 'rm> '    ps -a --filter 'status=exited' --format '{{.Names}}' -- --multi)
-  [[ -z "$ctrs" ]] && return 1
-  echo "$ctrs" | xargs _dcmd rm
+  ctrs=$(_d_stopped | __pick 'rm> ' --multi) || return 1
+  _dcmd rm ${(f)ctrs}
 }
 
 # images
@@ -124,9 +119,8 @@ dirm() {
     return
   fi
   local imgs
-  imgs=$(_d_pick 'rmi> '   images --format '{{.Repository}}:{{.Tag}}' -- --multi)
-  [[ -z "$imgs" ]] && return 1
-  echo "$imgs" | xargs _dcmd rmi
+  imgs=$(_d_ls images --format '{{.Repository}}:{{.Tag}}' | __pick 'rmi> ' --multi) || return 1
+  _dcmd rmi ${(f)imgs}
 }
 
 # compose
@@ -152,7 +146,7 @@ dstat()   { _dcmd stats "$@"; }
 dnet()    { _dcmd network ls "$@"; }
 
 dins() {
-  local ctr=${1:-$(_d_pick 'inspect> ' ps -a --format '{{.Names}}')}
+  local ctr=${1:-$(_d_ls ps -a --format '{{.Names}}' | __pick 'inspect> ')}
   [[ -z "$ctr" ]] && return 1
   _dcmd inspect "$ctr"
 }

@@ -26,11 +26,11 @@ EOF
 # fzf multi-select process killer
 pk() {
   local sig="${1:-TERM}"
-  local pids
-  pids=$(ps aux | __fzf --multi --header-lines=1 | awk '{print $2}')
-  [[ -z "$pids" ]] && return 0
-  echo "$pids" | xargs kill -"$sig"
-  echo "sent SIG$sig to: $(echo $pids | tr '\n' ' ')"
+  local selection pids
+  selection=$(ps aux | __pick 'kill> ' --multi --header-lines=1) || return 0
+  pids=$(echo "$selection" | awk '{print $2}')
+  kill -"$sig" ${(f)pids}
+  echo "sent SIG$sig to: ${(f)pids}"
 }
 
 # show what's on a port, prompt to kill

@@ -45,11 +45,9 @@ tsinit() {
   fi
 }
 
-## pick a tailnet device from `tailscale status` output
-_ts_pick_device() {
-  local prompt=$1
-  tailscale status | awk 'NR>1 && $2 != "" { print $2 }' \
-    | __fzf --prompt="$prompt"
+## tailnet devices, one "<ip> <name>" per line — the list both pickers read
+_ts_devices() {
+  tailscale status | awk 'NR>1 && $2 != "" { print $1, $2 }'
 }
 
 ## SSH to tailnet device (inline or fzf pick)
@@ -57,12 +55,10 @@ tssh() {
   local device="$1" ip
   if [[ -z "$device" ]]; then
     local selection
-    selection=$(tailscale status | awk 'NR>1 && $2 != "" { print $1, $2 }' \
-      | __fzf --prompt='ssh device> ')
-    [[ -z "$selection" ]] && return 1
-    ip="${selection%% *}" device="${selection##* }"
+    selection=$(_ts_devices | __pick 'ssh device> ') || return 1
+    ip="${selection%% *}"
   else
-    ip=$(tailscale status | awk -v d="$device" '$2 == d { print $1; exit }')
+    ip=$(_ts_devices | awk -v d="$device" '$2 == d { print $1; exit }')
     [[ -z "$ip" ]] && echo "tssh: device '$device' not found in tailnet" >&2 && return 1
   fi
   ssh "$ip"
@@ -70,7 +66,10 @@ tssh() {
 
 ## ping tailnet device (inline or fzf pick)
 tsping() {
-  local device=${1:-$(_ts_pick_device 'ping device> ')}
-  [[ -z "$device" ]] && return 1
+  local device="$1"
+  if [[ -z "$device" ]]; then
+    device=$(_ts_devices | __pick 'ping device> ') || return 1
+    device="${device##* }"
+  fi
   tailscale ping "$device"
 }
