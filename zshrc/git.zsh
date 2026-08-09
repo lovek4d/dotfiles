@@ -9,15 +9,9 @@ __git_fzf_branch() {
     git ${=cmd} "$@"
   else
     local branch
-    branch=$(__git_branch_list | __fzf --prompt="$prompt")
-    [[ -n "$branch" ]] && git ${=cmd} "$branch"
+    branch=$(__git_branch_list | __pick "$prompt") || return 1
+    git ${=cmd} "$branch"
   fi
-}
-
-__git_fzf_local_branch() {
-  local prompt="$1"; shift
-  git branch --format='%(refname:short)' | sort \
-    | __fzf --prompt="$prompt" "$@"
 }
 
 __git_worktree_branches() {
@@ -27,13 +21,11 @@ __git_worktree_branches() {
 __git_resolve_worktree() {
   local prompt="$1" branch="$2"
   if [[ -z "$branch" ]]; then
-    branch=$(__git_worktree_branches | __fzf --prompt="$prompt")
-    [[ -z "$branch" ]] && return 1
+    branch=$(__git_worktree_branches | __pick "$prompt") || return 1
   fi
-  local local_branch="$branch" start_point=""
-  __git_normalize_branch "$branch" local_branch start_point
-  local wt="$(__git_worktree_for_branch "$branch")"
-  [[ -z "$wt" ]] && wt="$(__git_worktree_for_branch "$local_branch")"
+  local local_branch
+  local_branch="$(__git_normalize_branch "$branch" | cut -f1)"
+  local wt="$(__git_worktree_for_branch "$local_branch")"
   [[ -z "$wt" ]] && echo "no worktree for branch: $local_branch" >&2 && return 1
   echo "$wt"
 }
@@ -50,8 +42,7 @@ __git_apply_worktree_diff() {
 __git_stash_fzf() {
   local action=$1 prompt=$2; shift 2
   local entry
-  entry=$(git stash list | __fzf --prompt="$prompt")
-  [[ -z "$entry" ]] && return 1
+  entry=$(git stash list | __pick "$prompt") || return 1
   git stash $action "$@" "${entry%%:*}"
 }
 
@@ -260,8 +251,7 @@ gdaw() {
 gdawh() {
   local branch="$1"
   if [[ -z "$branch" ]]; then
-    branch=$(__git_worktree_branches | __fzf --prompt='apply from worktree (hard)> ')
-    [[ -z "$branch" ]] && return 1
+    branch=$(__git_worktree_branches | __pick 'apply from worktree (hard)> ') || return 1
   fi
   local wt; wt=$(__git_resolve_worktree '' "$branch") || return 1
   git reset --hard || return 1
@@ -299,22 +289,22 @@ gswmh() { git switch -f "$(__git_default_branch)"; }
 ## swap branch with stash (fzf select)
 gswap() {
   local branch
-  branch=$(__git_branch_list | __fzf --prompt='swap to> ')
-  [[ -z "$branch" ]] && return 1
+  branch=$(__git_branch_list | __pick 'swap to> ') || return 1
   git stash -m "switch staging" && git switch "$branch" && git stash pop
 }
 
 ## delete branches by pattern, or fzf select
 __git_delete_branches() {
-  local flag="$1"; shift
-  if [[ -n "$1" ]]; then
-    git branch | grep -F "$1" | sed 's/^\*//' | xargs -n1 git branch "$flag"
+  local flag="$1" pattern="$2" branches
+  if [[ -n "$pattern" ]]; then
+    branches=$(git branch --format='%(refname:short)' | grep -F "$pattern")
   else
-    local branches
-    branches=$(__git_fzf_local_branch 'delete branch> ' --multi)
-    [[ -z "$branches" ]] && return 1
-    echo "$branches" | xargs -n1 git branch "$flag" --
+    branches=$(git branch --format='%(refname:short)' | sort \
+      | __pick 'delete branch> ' --multi) || return 1
   fi
+  [[ -z "$branches" ]] && return 1
+  local b
+  for b in ${(f)branches}; do git branch "$flag" -- "$b"; done
 }
 gdl()  { __git_delete_branches -d "$@"; }
 gdlf() { __git_delete_branches -D "$@"; }
@@ -337,25 +327,30 @@ __git_worktree_path() {
   echo "${root:h}/${root:t}-worktrees/$branch"
 }
 
-__git_worktree_add() {
-  local local_branch="$1" target="$2" start_point="$3"
+## create or reuse a worktree for <branch>; prints its path.
+## Accepts remote-qualified names (origin/foo creates local foo from origin/foo).
+## usage: __git_worktree_ensure <branch> [start-point] [repo-root]
+__git_worktree_ensure() {
+  local branch="$1" explicit_start="${2:-}" root="${3:-$(__git_repo_root)}"
+  local local_branch start_point
+  IFS=$'\t' read -r local_branch start_point <<< "$(__git_normalize_branch "$branch" "$explicit_start")"
+
   local existing="$(__git_worktree_for_branch "$local_branch")"
-  if [[ -n "$existing" ]]; then
-    echo "$existing"
-    return 0
-  fi
+  [[ -n "$existing" ]] && { print -r -- "$existing"; return 0; }
+
+  local target="$(__git_worktree_path "$local_branch" "$root")"
+  mkdir -p "${target:h}" || return 1
+
   if git show-ref --verify --quiet "refs/heads/$local_branch"; then
     git worktree add "$target" "$local_branch" >/dev/null || return 1
   elif [[ -n "$start_point" ]]; then
     git worktree add -b "$local_branch" "$target" "$start_point" >/dev/null || return 1
+  elif git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
+    git worktree add "$target" "$local_branch" >/dev/null || return 1
   else
-    if git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
-      git worktree add "$target" "$local_branch" >/dev/null || return 1
-    else
-      git worktree add -b "$local_branch" "$target" "$(__git_default_branch)" >/dev/null || return 1
-    fi
+    git worktree add -b "$local_branch" "$target" "$(__git_default_branch)" >/dev/null || return 1
   fi
-  echo "$target"
+  print -r -- "$target"
 }
 
 __git_worktree_for_branch() {
@@ -372,38 +367,31 @@ __git_worktree_branch_for_path() {
   '
 }
 
-## normalize remote branch: strips remote prefix into local_branch/start_point refs
-## usage: __git_normalize_branch <branch> <local_branch_varname> <start_point_varname> [explicit_start]
+## resolve a remote-qualified branch name
+## prints: <local-branch> TAB <start-point>   (start-point empty when local)
+## usage: __git_normalize_branch <branch> [explicit_start]
 __git_normalize_branch() {
-  local _branch="$1" _lbname="$2" _spname="$3" _explicit="${4:-}"
-  if [[ -n "$_explicit" ]]; then
-    eval "$_spname=\$_explicit"
-  else
-    local _remote_prefix="${_branch%%/*}"
-    if [[ "$_branch" == */* ]] && git remote | grep -qx "$_remote_prefix" \
-        && ! git show-ref --verify --quiet "refs/heads/$_branch"; then
-      eval "$_lbname=\${_branch#*/}"
-      eval "$_spname=\$_branch"
+  local branch="$1" explicit="${2:-}"
+  local local_branch="$branch" start_point="$explicit"
+  if [[ -z "$explicit" && "$branch" == */* ]]; then
+    local remote="${branch%%/*}"
+    if git remote | grep -qx "$remote" \
+        && ! git show-ref --verify --quiet "refs/heads/$branch"; then
+      local_branch="${branch#*/}"
+      start_point="$branch"
     fi
   fi
+  print -r -- "$local_branch"$'\t'"$start_point"
 }
 
 ## create or reuse worktree (fzf select or branch arg)
 gwc() {
-  local branch
-  if [[ -n "$1" ]]; then
-    branch="$1"
-  else
-    branch=$(__git_branch_list | __fzf --prompt='worktree branch> ')
+  local branch="$1"
+  if [[ -z "$branch" ]]; then
+    branch=$(__git_branch_list | __pick 'worktree branch> ') || return 1
   fi
-  [[ -z "$branch" ]] && return 1
-
-  local local_branch="$branch" start_point=""
-  __git_normalize_branch "$branch" local_branch start_point
-
-  local target="$(__git_worktree_path "$local_branch")"
-  mkdir -p "$(dirname "$target")"
-  target="$(__git_worktree_add "$local_branch" "$target" "$start_point")" || return 1
+  local target
+  target="$(__git_worktree_ensure "$branch")" || return 1
   echo "Worktree at: $target"
 }
 

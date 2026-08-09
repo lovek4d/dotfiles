@@ -30,12 +30,11 @@ EOF
   root="$(__git_repo_root 2>/dev/null)" || { echo "not in a git repo"; return 1; }
 
   if [[ -z "$branch" ]]; then
-    branch=$(__git_branch_list | __fzf --prompt='worktree branch> ')
-    [[ -z "$branch" ]] && return 1
+    branch=$(__git_branch_list | __pick 'worktree branch> ') || return 1
   fi
 
-  local local_branch="$branch" start_point=""
-  __git_normalize_branch "$branch" local_branch start_point
+  local local_branch start_point
+  IFS=$'\t' read -r local_branch start_point <<< "$(__git_normalize_branch "$branch")"
   [[ -z "$start_point" ]] && start_point=HEAD
 
   local session="$(__git_branch_slug "$local_branch")"
@@ -44,11 +43,12 @@ EOF
     return 0
   fi
 
-  local target="$(__git_worktree_path "$local_branch" "$root")"
+  # a worktree we did not create is one we must not remove on exit
   local cleanup=1
   [[ -n "$(__git_worktree_for_branch "$local_branch")" ]] && cleanup=0
-  mkdir -p "$(dirname "$target")"
-  target="$(__git_worktree_add "$local_branch" "$target" "$start_point")" || return 1
+
+  local target
+  target="$(__git_worktree_ensure "$branch" "$start_point" "$root")" || return 1
   __agent_worktree_session "$root" "$target" "$local_branch" "$launch" "$cleanup"
 }
 
@@ -72,8 +72,7 @@ EOF
 
   local branch="$1"
   if [[ -z "$branch" ]]; then
-    branch=$(__git_worktree_branches | __fzf --prompt='destroy worktree> ')
-    [[ -z "$branch" ]] && return 1
+    branch=$(__git_worktree_branches | __pick 'destroy worktree> ') || return 1
   fi
 
   local wt_path="$(__git_resolve_worktree '' "$branch")" || return 1
