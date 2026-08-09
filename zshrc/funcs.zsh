@@ -58,18 +58,17 @@ py_watch() {
   echo "$1" | entr -cc python3 "$1"
 }
 
-# delayed enter — sleep N minutes then press Enter, keeping mac awake
+# delayed enter — sleep N minutes then press Enter, keeping the machine awake
 denter() {
   [[ -z "$1" ]] && echo "usage: denter <minutes>" && return 1
   local secs=$(( $1 * 60 ))
-  caffeinate -di -t "$secs" &
-  local caf_pid=$!
+  local awake_pid; awake_pid="$(__keep_awake "$secs")"
   while (( secs > 0 )); do
     printf "\rdenter in %d:%02d " $(( secs / 60 )) $(( secs % 60 ))
     sleep 1
     (( secs-- ))
   done
   printf "\rdenter now!          \n"
-  kill "$caf_pid" 2>/dev/null
-  osascript -e 'tell application "System Events" to key code 36'
+  [[ -n "$awake_pid" ]] && kill "$awake_pid" 2>/dev/null
+  __press_enter
 }

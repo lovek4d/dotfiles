@@ -8,10 +8,9 @@ __confirm() {
 __load_nvm() {
   export NVM_DIR="$HOME/.nvm"
   mkdir -p "$NVM_DIR"
-  if [[ -n "${_BREW_PFX:-}" ]]; then
-    [ -s "$_BREW_PFX/opt/nvm/nvm.sh" ] && \. "$_BREW_PFX/opt/nvm/nvm.sh"
-  fi
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  local nvm_sh
+  nvm_sh=$(__first_file "${_BREW_PFX:+$_BREW_PFX/opt/nvm/nvm.sh}" "$NVM_DIR/nvm.sh") \
+    && \. "$nvm_sh"
 }
 
 __ensure_node() {

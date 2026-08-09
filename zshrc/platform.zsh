@@ -26,6 +26,39 @@ __notify() {
   fi
 }
 
+## keep the machine awake for <seconds>; prints the pid holding it awake
+## (nothing, and no pid, where the platform has no inhibitor)
+__keep_awake() {
+  local secs="$1"
+  if __is_macos; then
+    caffeinate -di -t "$secs" & print -r -- $!
+  elif command -v systemd-inhibit >/dev/null 2>&1; then
+    systemd-inhibit --what=idle --why="keep awake" sleep "$secs" & print -r -- $!
+  fi
+}
+
+## synthesise a Return keypress into the focused window
+__press_enter() {
+  if __is_macos; then
+    osascript -e 'tell application "System Events" to key code 36'
+  elif command -v xdotool >/dev/null 2>&1; then
+    xdotool key Return
+  else
+    echo "press-enter: needs xdotool on this platform" >&2
+    return 1
+  fi
+}
+
+## print the first path that exists and is non-empty; non-zero if none do.
+## Empty arguments are skipped, so "${_BREW_PFX:+...}" can be passed directly.
+__first_file() {
+  local p
+  for p in "$@"; do
+    [[ -n "$p" && -s "$p" ]] && { print -r -- "$p"; return 0; }
+  done
+  return 1
+}
+
 ## symlink a repo config into place, replacing an existing link.
 ## Refuses to clobber a real file; announces what it linked.
 __link_config() {

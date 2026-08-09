@@ -118,11 +118,8 @@ alias wdvenv='source .venv/bin/activate'
 
 # nvm + autocomplete
 __load_nvm
-if [[ -n "${_BREW_PFX:-}" ]]; then
-  [ -s "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm" ] && \. "$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm"
-else
-  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-fi
+_f=$(__first_file "${_BREW_PFX:+$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm}" \
+                  "$NVM_DIR/bash_completion") && \. "$_f"
 
 # dotfiles
 alias zpl='git -C ~/dev/dotfiles pull && source ~/.zshrc'
@@ -152,21 +149,13 @@ path=("$HOME/.local/bin" $path)
 (( $+commands[starship] )) && eval "$(starship init zsh)"
 
 # fzf key-bindings (ctrl+r history search)
-if [[ -n "${_BREW_PFX:-}" ]]; then
-  _fzf_keys="$_BREW_PFX/opt/fzf/shell/key-bindings.zsh"
-elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
-  _fzf_keys="/usr/share/doc/fzf/examples/key-bindings.zsh"
-fi
-[[ -n "$_fzf_keys" && -s "$_fzf_keys" ]] && source "$_fzf_keys"
-unset _fzf_keys
+_f=$(__first_file "${_BREW_PFX:+$_BREW_PFX/opt/fzf/shell/key-bindings.zsh}" \
+                  /usr/share/doc/fzf/examples/key-bindings.zsh) && source "$_f"
 
 # zsh plugins — must come after all widget/hook setup above.
 # syntax-highlighting must be the absolute last plugin sourced.
-if [[ -n "${_BREW_PFX:-}" ]]; then
-  [ -s "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ] && source "$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-  [ -s "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] && source "$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-else
-  [ -s /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-  [ -s /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-fi
-unset _BREW_PFX
+_f=$(__first_file "${_BREW_PFX:+$_BREW_PFX/share/zsh-autosuggestions/zsh-autosuggestions.zsh}" \
+                  /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh) && source "$_f"
+_f=$(__first_file "${_BREW_PFX:+$_BREW_PFX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh}" \
+                  /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh) && source "$_f"
+unset _f _BREW_PFX
