@@ -115,9 +115,6 @@ zinit() {
   echo "=== tmux ==="
   tminit
 
-  echo "=== starship ==="
-  __link_config "$HOME/dev/dotfiles/configs/starship.toml" "$HOME/.config/starship.toml"
-
   echo "=== ssh ==="
   sinit
 
