@@ -46,6 +46,14 @@ test_gsw_cancelled_runs_no_git_command() {
   assert_not_called "git switch"
 }
 
+test_gsw_remote_branch_tracks_into_a_local_branch() {
+  fake_git; stub fzf
+  load git
+  gsw origin/hotfix
+  assert_called "git switch -c hotfix origin/hotfix"
+  assert_not_called "fzf"
+}
+
 test_branch_list_hides_remotes_that_have_a_local() {
   fake_git
   load git

@@ -276,8 +276,21 @@ alias gbr='git branch'
 alias gco='git checkout'
 alias gswc='git switch --create'
 
-## switch branch (inline or fzf select)
-gsw()  { __git_fzf_branch switch      'switch> ' "$@"; }
+## switch branch (inline or fzf select); remote-qualified branches (origin/foo)
+## are tracked into a new local branch since `git switch` can't check one out directly
+gsw() {
+  local branch="$1"
+  if [[ -z "$branch" ]]; then
+    branch=$(__git_branch_list | __pick 'switch> ') || return 1
+  fi
+  local local_branch start_point
+  IFS=$'\t' read -r local_branch start_point <<< "$(__git_normalize_branch "$branch")"
+  if [[ -n "$start_point" ]]; then
+    git switch -c "$local_branch" "$start_point"
+  else
+    git switch "$local_branch"
+  fi
+}
 gswd() { __git_fzf_branch 'switch -d' 'detach> ' "$@"; }
 
 ## switch to main/master (autodetect)
