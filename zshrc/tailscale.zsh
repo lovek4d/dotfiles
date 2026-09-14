@@ -19,6 +19,7 @@ tailscale aliases:
     tssh [device]   SSH to tailnet device (fzf)
     tmosh [device]  mosh to tailnet device (fzf)
     tsping [device] ping tailnet device (fzf)
+    tspull [device] rsync-pull cwd's repo root from tailnet device (fzf)
 EOF
 }
 
@@ -88,4 +89,32 @@ tsping() {
     device="${device##* }"
   fi
   tailscale ping "$device"
+}
+
+## rsync-pull the cwd's repo root from the same ~-relative path on a tailnet
+## device (inline or fzf pick) — home dirs differ (/Users vs /home), so the
+## remote side is addressed as ~/<path-relative-to-$HOME> and expanded by
+## the remote shell. Mirrors exactly (--delete): local-only uncommitted
+## files in that checkout will be clobbered. Skips .git and .gitignore'd
+## paths. Missing remote dir surfaces as rsync's own error, unfiltered.
+## macOS's system rsync is openrsync, which silently ignores --filter merge
+## rules — so this needs Homebrew's real rsync, called by explicit path
+## (bare `rsync` could still resolve to openrsync depending on PATH order).
+tspull() {
+  local rsync_bin=rsync
+  if __is_macos; then
+    rsync_bin=$(__first_file /opt/homebrew/bin/rsync /usr/local/bin/rsync) || {
+      echo "tspull: needs Homebrew rsync (openrsync doesn't support --filter) — run 'brew install rsync'" >&2
+      return 1
+    }
+  fi
+
+  local ip
+  ip=$(_ts_device_ip pull "$1") || return 1
+
+  local root rel
+  root="$(__git_repo_root 2>/dev/null)" || { echo "tspull: not in a git repo" >&2; return 1; }
+  rel="${root#$HOME/}"
+
+  "$rsync_bin" -avz --delete --exclude .git --filter=':- .gitignore' "${ip}:~/${rel}/" "${root}/"
 }

@@ -89,7 +89,9 @@ zinit() {
   local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr mosh)
 
   if __is_macos; then
-    _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale fd
+    # rsync: macOS ships openrsync, which silently ignores --filter merge
+    # rules (tspull needs real GNU rsync for .gitignore-aware excludes)
+    _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale fd rsync
   elif __is_linux; then
     _zinit_linux "${pkgs[@]}" zsh curl xclip docker.io fd-find
   else
