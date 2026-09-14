@@ -51,4 +51,4 @@ Zsh dotfiles for macOS and Ubuntu. Sourced via `source $HOME/dev/dotfiles/zshrc/
 
 ## Setup
 
-`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both ensure Node LTS/npm/npx through nvm. Run `ainit` separately for Claude settings/hooks and optional Claude/Codex skills/plugins.
+`zinit` bootstraps a new machine. On macOS: installs xcode tools, homebrew, brew packages (git, fzf, tmux, nvm, python, claude-code, colima, docker, zsh-autosuggestions, zsh-syntax-highlighting, zoxide, mosh). On Ubuntu: apt packages + nvm install script + claude-code via npm. Both ensure Node LTS/npm/npx through nvm. Run `ainit` separately for Claude settings/hooks and optional Claude/Codex skills/plugins.

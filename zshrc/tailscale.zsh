@@ -17,6 +17,7 @@ tailscale aliases:
 
   devices
     tssh [device]   SSH to tailnet device (fzf)
+    tmosh [device]  mosh to tailnet device (fzf)
     tsping [device] ping tailnet device (fzf)
 EOF
 }
@@ -50,18 +51,33 @@ _ts_devices() {
   tailscale status | awk 'NR>1 && $2 != "" { print $1, $2 }'
 }
 
+## resolve a tailnet device to its IP — by name if given, else fzf pick
+_ts_device_ip() {
+  local verb="$1" device="$2" ip
+  if [[ -z "$device" ]]; then
+    ip=$(_ts_devices | __pick "$verb device> ") || return 1
+    print -r -- "${ip%% *}"
+    return
+  fi
+  ip=$(_ts_devices | awk -v d="$device" '$2 == d { print $1; exit }')
+  [[ -z "$ip" ]] && echo "${funcstack[2]}: device '$device' not found in tailnet" >&2 && return 1
+  print -r -- "$ip"
+}
+
 ## SSH to tailnet device (inline or fzf pick)
 tssh() {
-  local device="$1" ip
-  if [[ -z "$device" ]]; then
-    local selection
-    selection=$(_ts_devices | __pick 'ssh device> ') || return 1
-    ip="${selection%% *}"
-  else
-    ip=$(_ts_devices | awk -v d="$device" '$2 == d { print $1; exit }')
-    [[ -z "$ip" ]] && echo "tssh: device '$device' not found in tailnet" >&2 && return 1
-  fi
+  local ip
+  ip=$(_ts_device_ip ssh "$1") || return 1
   ssh "$ip"
+}
+
+## mosh to tailnet device (inline or fzf pick). mosh starts the server over a
+## non-interactive ssh, which never reads .zshrc — so a Homebrew mosh-server on
+## a mac isn't on PATH. Prepend both brew prefixes; harmless on linux.
+tmosh() {
+  local ip
+  ip=$(_ts_device_ip mosh "$1") || return 1
+  mosh --server='PATH=/opt/homebrew/bin:/usr/local/bin:$PATH mosh-server' "$ip"
 }
 
 ## ping tailnet device (inline or fzf pick)

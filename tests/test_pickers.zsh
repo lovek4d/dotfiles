@@ -98,6 +98,43 @@ test_tssh_unknown_device_does_not_connect() {
   assert_not_called "ssh "
 }
 
+test_tmosh_resolves_a_named_device_to_its_ip() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
+  stub mosh; stub fzf
+  load tailscale
+  tmosh nas
+  assert_called "mosh --server=PATH=/opt/homebrew/bin:/usr/local/bin:\$PATH mosh-server 100.2.2.2"
+  assert_not_called "fzf"
+}
+
+test_tmosh_picker_moshes_to_the_ip_not_the_name() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
+  stub mosh; stub fzf "100.2.2.2 nas"
+  load tailscale
+  tmosh
+  assert_called "mosh-server 100.2.2.2"
+}
+
+test_tmosh_cancelled_pick_does_not_connect() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" ;; esac'
+  stub mosh; stub fzf ""
+  load tailscale
+  tmosh
+  assert_err $?
+  assert_not_called "mosh --server"
+}
+
+test_tmosh_unknown_device_names_the_caller() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" ;; esac'
+  stub mosh
+  load tailscale
+  local err
+  err=$(tmosh nope 2>&1)
+  assert_err $?
+  assert_eq "tmosh: device 'nope' not found in tailnet" "$err"
+  assert_not_called "mosh --server"
+}
+
 # ssh
 
 test_sc_with_arg_skips_the_picker() {

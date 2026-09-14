@@ -86,7 +86,7 @@ ainit() {
 }
 
 zinit() {
-  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr)
+  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr mosh)
 
   if __is_macos; then
     _zinit_macos "${pkgs[@]}" nvm colima docker starship tailscale fd
@@ -175,6 +175,16 @@ _zinit_macos() {
     brew upgrade "$pkg"
     ((i++))
   done
+  # mosh-server takes UDP 60000-61000; the app firewall blocks it unless allowed.
+  # Keyed on the resolved Cellar path, so re-run after a mosh upgrade.
+  local fw=/usr/libexec/ApplicationFirewall/socketfilterfw mosh_server
+  if [[ "$($fw --getglobalstate 2>/dev/null)" == *enabled* ]] \
+    && mosh_server=$(__first_file "$_BREW_PFX/bin/mosh-server"); then
+    echo "=== firewall: allowing mosh-server ==="
+    sudo "$fw" --add "${mosh_server:A}" >/dev/null
+    sudo "$fw" --unblockapp "${mosh_server:A}" >/dev/null
+  fi
+
   brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 
   echo "=== brew casks ==="
@@ -199,6 +209,12 @@ _zinit_linux() {
     echo "=== adding $USER to docker group ==="
     sudo usermod -aG docker "$USER"
     echo "docker group added (re-login to take effect)"
+  fi
+
+  # mosh-server takes UDP 60000-61000; only reachable over the tailnet
+  if command -v ufw >/dev/null 2>&1 && sudo ufw status | grep -q '^Status: active'; then
+    echo "=== ufw: allowing mosh on tailscale0 ==="
+    sudo ufw allow in on tailscale0 to any port 60000:61000 proto udp
   fi
 
   # nvm via install script
