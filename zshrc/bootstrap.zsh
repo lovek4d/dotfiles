@@ -42,41 +42,11 @@ __agent_install_mattpocock_skills() {
   fi
 }
 
-__agent_install_claude_ponytail() {
-  if command -v claude >/dev/null 2>&1; then
-    claude plugin marketplace add DietrichGebert/ponytail
-    claude plugin install ponytail@ponytail --scope user
-  else
-    echo "skipped Claude Ponytail: claude missing"
-  fi
-}
-
-__agent_install_codex_ponytail() {
-  if command -v codex >/dev/null 2>&1; then
-    codex plugin marketplace add DietrichGebert/ponytail
-    codex plugin add ponytail@ponytail
-  else
-    echo "skipped Codex Ponytail: codex missing"
-    echo "run later: codex plugin marketplace add DietrichGebert/ponytail"
-    echo "then: codex plugin add ponytail@ponytail"
-  fi
-}
-
-__agent_install_ponytail() {
-  __agent_install_claude_ponytail
-  __agent_install_codex_ponytail
-  echo "Ponytail installed where available; restart Claude/Codex, then enable/disable it from plugin controls and trust hooks if prompted"
-}
-
 __agent_install_optional_extras() {
   echo "=== optional agent extras ==="
 
   if __confirm "Install Matt Pocock engineering skills for Claude/Codex?"; then
     __agent_install_mattpocock_skills
-  fi
-
-  if __confirm "Install Ponytail for Claude Code and Codex?"; then
-    __agent_install_ponytail
   fi
 }
 
