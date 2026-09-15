@@ -14,6 +14,9 @@ fake_git() {
       "worktree list --porcelain")
         print -rl -- "worktree /home/dev/repo" "branch refs/heads/main" \
                      "worktree /home/dev/repo-worktrees/feature" "branch refs/heads/feature" ;;
+      "rev-parse --show-toplevel")                         print -r -- /home/dev/repo ;;
+      "-C /home/dev/repo-worktrees/feature diff --quiet HEAD") return 1 ;;
+      "-C /home/dev/repo-worktrees/feature diff --binary HEAD") print -r -- PATCH ;;
       "show-ref --verify --quiet refs/heads/feature") return 0 ;;
       show-ref*) return 1 ;;
       fetch*) return 1 ;;
@@ -108,6 +111,53 @@ test_resolve_worktree_errors_when_no_worktree() {
   local out; out="$(__git_resolve_worktree 'p> ' nope 2>&1)"
   assert_err $?
   assert_eq "no worktree for branch: nope" "$out"
+}
+
+test_gwaf_without_arg_picks_a_worktree_branch() {
+  fake_git; stub fzf feature
+  load git
+  gwaf >/dev/null
+  assert_called "fzf --height=40% --reverse --no-sort --prompt=apply from worktree (full)> "
+  assert_called "git switch -d feature"
+}
+
+test_gwaf_cleans_before_detaching_and_applying() {
+  fake_git; stub fzf
+  load git
+  local out; out="$(gwaf feature)"
+  assert_ok $?
+  assert_eq "Applied all changes from feature worktree" "$out"
+  assert_eq $'git reset --hard\ngit -C /home/dev/repo clean -fd\ngit switch -d feature' \
+    "$(calls | grep -E 'reset|clean|switch')"
+  assert_called "git -C /home/dev/repo-worktrees/feature diff --binary HEAD"
+  assert_called "git -C /home/dev/repo apply"
+  assert_called "git -C /home/dev/repo-worktrees/feature ls-files --others --exclude-standard"
+}
+
+test_gwaf_stops_when_switch_fails() {
+  fake_git; stub fzf
+  load git
+  functions[__real_git]=$functions[git]
+  git() { [[ "$1" == switch ]] && return 1; __real_git "$@"; }
+  gwaf feature >/dev/null 2>&1
+  assert_err $?
+  assert_not_called "diff --binary"
+}
+
+test_gwaf_cancelled_runs_no_git_command() {
+  fake_git; stub fzf ""
+  load git
+  gwaf
+  assert_not_called "git reset"
+  assert_not_called "git switch"
+}
+
+test_apply_worktree_diff_skips_patch_when_worktree_diff_is_empty() {
+  fake_git; stub fzf
+  load git
+  __git_apply_worktree_diff /home/dev/repo-worktrees/other
+  assert_ok $?
+  assert_not_called "apply"
 }
 
 test_gwc_reuses_an_existing_worktree() {

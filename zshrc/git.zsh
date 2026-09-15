@@ -30,12 +30,17 @@ __git_resolve_worktree() {
   echo "$wt"
 }
 
+## apply <wt>'s tracked diff (staged + unstaged, binary-safe) and copy its
+## untracked files onto the current repo root. `git apply` rejects empty input,
+## so an untracked-only worktree skips the patch step.
 __git_apply_worktree_diff() {
-  local wt="$1"
-  git -C "$wt" diff HEAD | git apply || return 1
-  git -C "$wt" ls-files --others --exclude-standard | while read -r f; do
-    mkdir -p "$(dirname "$f")"
-    cp "$wt/$f" "$f"
+  local wt="$1" top f
+  top="$(git rev-parse --show-toplevel)" || return 1
+  if ! git -C "$wt" diff --quiet HEAD; then
+    git -C "$wt" diff --binary HEAD | git -C "$top" apply || return 1
+  fi
+  git -C "$wt" ls-files --others --exclude-standard | while IFS= read -r f; do
+    mkdir -p "$top/${f:h}" && cp "$wt/$f" "$top/$f" || return 1
   done
 }
 
@@ -147,8 +152,6 @@ git aliases:
     gdc    git diff HEAD~1
     gdcp   copy diff to clipboard
     gdap   apply diff from clipboard
-    gdaw   apply from worktree (fzf)
-    gdawh  apply from worktree, detach + discard changes (fzf)
     gdb    diff branch (fzf)
     gdm    git diff main
   resets
@@ -168,6 +171,8 @@ git aliases:
     gswm   switch to main
     gswmh  switch to main, discard changes
   worktrees
+    gwa    apply worktree diff onto current checkout (fzf)
+    gwaf   discard + clean, detach at branch, apply worktree diff (fzf)
     gwc    create or reuse worktree (fzf)
     gwd    rm worktree (fzf)
     gwl    git worktree list
@@ -239,26 +244,6 @@ alias gd='git diff'
 alias gdc='git diff HEAD~1'
 alias gdcp='git diff | clipcopy && echo "Copied diff to clipboard"'
 alias gdap='clippaste | git apply && echo "Applied diff from clipboard"'
-
-## apply diff from worktree (fzf select or branch arg)
-gdaw() {
-  local wt="$(__git_resolve_worktree 'apply from worktree> ' "$1")" || return
-  __git_apply_worktree_diff "$wt"
-  echo "Applied diff from $wt"
-}
-
-## apply from worktree: discard local changes, detach at branch (fzf select or branch arg)
-gdawh() {
-  local branch="$1"
-  if [[ -z "$branch" ]]; then
-    branch=$(__git_worktree_branches | __pick 'apply from worktree (hard)> ') || return 1
-  fi
-  local wt; wt=$(__git_resolve_worktree '' "$branch") || return 1
-  git reset --hard || return 1
-  git switch -d "$branch" || return 1
-  __git_apply_worktree_diff "$wt"
-  echo "Applied all changes from $branch worktree"
-}
 
 ## diff branch (inline or fzf select)
 gdb() { __git_fzf_branch diff 'diff branch> ' "$@"; }
@@ -397,6 +382,29 @@ __git_normalize_branch() {
   print -r -- "$local_branch"$'\t'"$start_point"
 }
 
+## apply diff from worktree onto the current checkout (fzf select or branch arg)
+gwa() {
+  local wt; wt="$(__git_resolve_worktree 'apply from worktree> ' "$1")" || return 1
+  __git_apply_worktree_diff "$wt" || return 1
+  echo "Applied diff from $wt"
+}
+
+## reproduce a worktree's exact shape here: discard tracked + untracked changes
+## (ignored files like build caches survive), detach at its branch, apply its diff
+gwaf() {
+  local branch="$1"
+  if [[ -z "$branch" ]]; then
+    branch=$(__git_worktree_branches | __pick 'apply from worktree (full)> ') || return 1
+  fi
+  local wt; wt="$(__git_resolve_worktree '' "$branch")" || return 1
+  local top; top="$(git rev-parse --show-toplevel)" || return 1
+  git reset --hard || return 1
+  git -C "$top" clean -fd || return 1
+  git switch -d "$branch" || return 1
+  __git_apply_worktree_diff "$wt" || return 1
+  echo "Applied all changes from $branch worktree"
+}
+
 ## create or reuse worktree (fzf select or branch arg)
 gwc() {
   local branch="$1"
@@ -451,7 +459,7 @@ _complete_worktree_branches() {
   for fn cmd in "${(@kv)_git_completions}"; do
     eval "_${fn}() { __git_complete_as ${cmd} }; compdef _${fn} ${fn}"
   done
-  local -a _wt_completions=(gdaw gdawh gwd gws)
+  local -a _wt_completions=(gwa gwaf gwd gws)
   for fn in "${_wt_completions[@]}"; do
     eval "_${fn}() { _complete_worktree_branches }; compdef _${fn} ${fn}"
   done
