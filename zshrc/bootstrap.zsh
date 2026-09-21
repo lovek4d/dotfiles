@@ -157,12 +157,15 @@ _zinit_macos() {
   brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 
   echo "=== brew casks ==="
-  if brew list --cask macparakeet &>/dev/null; then
-    echo "macparakeet up to date"
-  else
-    echo "installing macparakeet..."
-    brew install --cask macparakeet
-  fi
+  local cask
+  for cask in google-chrome visual-studio-code raycast alt-tab scroll-reverser macparakeet; do
+    if brew list --cask "$cask" &>/dev/null; then
+      echo "$cask up to date"
+    else
+      echo "installing $cask..."
+      brew install --cask "$cask"
+    fi
+  done
 }
 
 _zinit_linux() {
