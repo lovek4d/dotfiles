@@ -56,7 +56,7 @@ ainit() {
 }
 
 zinit() {
-  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr mosh)
+  local pkgs=(git fzf tmux vim python3 pipx zsh-autosuggestions zsh-syntax-highlighting zoxide ripgrep bat jq sd entr mosh gh)
 
   if __is_macos; then
     # rsync: macOS ships openrsync, which silently ignores --filter merge
