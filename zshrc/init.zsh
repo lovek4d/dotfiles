@@ -119,7 +119,17 @@ alias sudo='sudo '
 alias python='python3'
 alias wdvenv='source .venv/bin/activate'
 
-# nvm + autocomplete
+# brew shell env (inlined from brew shellenv, no subprocess)
+if [[ -n "${_BREW_PFX:-}" ]]; then
+  export HOMEBREW_PREFIX="$_BREW_PFX"
+  export HOMEBREW_CELLAR="$_BREW_PFX/Cellar"
+  export HOMEBREW_REPOSITORY="$_BREW_PFX"
+  path=("$_BREW_PFX/bin" "$_BREW_PFX/sbin" $path)
+  export MANPATH="$_BREW_PFX/share/man${MANPATH+:$MANPATH}:"
+  export INFOPATH="$_BREW_PFX/share/info:${INFOPATH:-}"
+fi
+
+# nvm + autocomplete (after brew, so nvm's node wins over brew's node)
 __load_nvm
 _f=$(__first_file "${_BREW_PFX:+$_BREW_PFX/opt/nvm/etc/bash_completion.d/nvm}" \
                   "$NVM_DIR/bash_completion") && \. "$_f"
@@ -131,16 +141,6 @@ alias zpl='git -C ~/dev/dotfiles pull && source ~/.zshrc'
 alias zvim='${EDITOR:-vim} ~/.zshrc'
 alias zsrc='source ~/.zshrc'
 alias zup='zvim && zsrc'
-
-# brew shell env (inlined from brew shellenv, no subprocess)
-if [[ -n "${_BREW_PFX:-}" ]]; then
-  export HOMEBREW_PREFIX="$_BREW_PFX"
-  export HOMEBREW_CELLAR="$_BREW_PFX/Cellar"
-  export HOMEBREW_REPOSITORY="$_BREW_PFX"
-  path=("$_BREW_PFX/bin" "$_BREW_PFX/sbin" $path)
-  export MANPATH="$_BREW_PFX/share/man${MANPATH+:$MANPATH}:"
-  export INFOPATH="$_BREW_PFX/share/info:${INFOPATH:-}"
-fi
 
 # claude native installer drops binary here
 path=("$HOME/.local/bin" $path)
