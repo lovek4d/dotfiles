@@ -54,6 +54,7 @@ z() {
 zshrc aliases:
   general
     dev          cd ~/dev
+    meth [-t s]  caffeinate -d (display awake; no timeout unless -t secs)
     python       python3
     sudo         sudo (expands aliases after it)
     wdvenv       source .venv/bin/activate
@@ -114,6 +115,9 @@ fi
 
 # sudo (trailing space expands aliases after sudo)
 alias sudo='sudo '
+
+# keep the display awake until ctrl-c; `meth -t 3600` caps it at an hour
+alias meth='caffeinate -d'
 
 # python basics
 alias python='python3'
