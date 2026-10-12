@@ -330,7 +330,7 @@ __git_worktree_path() {
 ## usage: __git_worktree_ensure <branch> [start-point] [repo-root]
 __git_worktree_ensure() {
   local branch="$1" explicit_start="${2:-}" root="${3:-$(__git_repo_root)}"
-  local local_branch start_point
+  local local_branch start_point remote
   IFS=$'\t' read -r local_branch start_point <<< "$(__git_normalize_branch "$branch" "$explicit_start")"
 
   local existing="$(__git_worktree_for_branch "$local_branch")"
@@ -343,12 +343,20 @@ __git_worktree_ensure() {
     git worktree add "$target" "$local_branch" >/dev/null || return 1
   elif [[ -n "$start_point" ]]; then
     git worktree add -b "$local_branch" "$target" "$start_point" >/dev/null || return 1
-  elif git fetch origin "$local_branch":"refs/heads/$local_branch" 2>/dev/null; then
-    git worktree add "$target" "$local_branch" >/dev/null || return 1
+  elif remote="$(__git_remote_branch "$local_branch")"; then
+    git worktree add -b "$local_branch" "$target" "$remote" >/dev/null || return 1
   else
     git worktree add -b "$local_branch" "$target" "$(__git_default_branch)" >/dev/null || return 1
   fi
   print -r -- "$target"
+}
+
+## print origin/<branch> if origin has it (fetched first, so it is current);
+## a failed fetch (offline) falls back to the last-known remote-tracking ref
+__git_remote_branch() {
+  git fetch --quiet origin "$1" 2>/dev/null
+  git show-ref --verify --quiet "refs/remotes/origin/$1" || return 1
+  print -r -- "origin/$1"
 }
 
 __git_worktree_for_branch() {

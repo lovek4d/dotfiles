@@ -18,6 +18,7 @@ fake_git() {
       "-C /home/dev/repo-worktrees/feature diff --quiet HEAD") return 1 ;;
       "-C /home/dev/repo-worktrees/feature diff --binary HEAD") print -r -- PATCH ;;
       "show-ref --verify --quiet refs/heads/feature") return 0 ;;
+      "show-ref --verify --quiet refs/remotes/origin/hotfix") return 0 ;;
       show-ref*) return 1 ;;
       fetch*) return 1 ;;
     esac
@@ -180,6 +181,45 @@ test_gwc_normalizes_a_remote_branch() {
   load git
   gwc origin/hotfix >/dev/null
   assert_called "git worktree add -b hotfix /home/dev/repo-worktrees/hotfix origin/hotfix"
+}
+
+test_gwc_tracks_origin_when_only_the_remote_has_the_branch() {
+  fake_git; stub fzf; stub mkdir
+  load git
+  gwc hotfix >/dev/null
+  assert_called "git fetch --quiet origin hotfix"
+  assert_called "git worktree add -b hotfix /home/dev/repo-worktrees/hotfix origin/hotfix"
+}
+
+# agent worktrees
+
+test_cgt_tracks_origin_when_only_the_remote_has_the_branch() {
+  fake_git; stub fzf; stub mkdir; stub_rc tmux 1; stub tmux
+  load git tmux agent-worktree
+  cgt hotfix
+  assert_called "git worktree add -b hotfix /home/dev/repo-worktrees/hotfix origin/hotfix"
+}
+
+test_cgt_forks_head_for_a_brand_new_branch() {
+  fake_git; stub fzf; stub mkdir; stub_rc tmux 1; stub tmux
+  load git tmux agent-worktree
+  cgt newthing
+  assert_called "git worktree add -b newthing /home/dev/repo-worktrees/newthing HEAD"
+}
+
+test_cgt_reuses_a_local_branch_without_fetching() {
+  stub_fn git '
+    case "$*" in
+      "rev-parse --path-format=absolute --git-common-dir") print -r -- /home/dev/repo/.git ;;
+      "show-ref --verify --quiet refs/heads/local") return 0 ;;
+      show-ref*) return 1 ;;
+    esac
+    return 0'
+  stub fzf; stub mkdir; stub_rc tmux 1; stub tmux
+  load git tmux agent-worktree
+  cgt local
+  assert_called "git worktree add /home/dev/repo-worktrees/local local"
+  assert_not_called "fetch"
 }
 
 # branch deletion

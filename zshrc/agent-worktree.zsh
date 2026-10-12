@@ -17,7 +17,8 @@ $name - create a worktree + tmux session + launch $label
 usage: $name [branch-name]
 
   If branch-name is given, creates or reuses that branch.
-  New branches start from the current branch.
+  New branches track origin/<branch-name> if it exists,
+  otherwise start from the current branch.
   If omitted, fzf-selects from existing branches.
 
   If a tmux session already exists for the branch, attaches to it.
@@ -35,7 +36,10 @@ EOF
 
   local local_branch start_point
   IFS=$'\t' read -r local_branch start_point <<< "$(__git_normalize_branch "$branch")"
-  [[ -z "$start_point" ]] && start_point=HEAD
+  # an unknown name tracks origin's branch if one exists, else forks HEAD
+  if [[ -z "$start_point" ]] && ! git show-ref --verify --quiet "refs/heads/$local_branch"; then
+    start_point="$(__git_remote_branch "$local_branch")" || start_point=HEAD
+  fi
 
   local session="$(__git_branch_slug "$local_branch")"
   if __tmux_session_exists "$session"; then
