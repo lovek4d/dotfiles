@@ -153,6 +153,13 @@ _zinit_macos() {
     sudo "$fw" --add "${mosh_server:A}" >/dev/null
     sudo "$fw" --unblockapp "${mosh_server:A}" >/dev/null
   fi
+  # A mosh client runs a bare `mosh-server` over non-interactive ssh, which only
+  # reads .zshenv and gets sshd's /usr/bin:/bin PATH — put Homebrew on it there.
+  local zshenv_line="path=($_BREW_PFX/bin \$path)"
+  if ! grep -qxF "$zshenv_line" ~/.zshenv 2>/dev/null; then
+    echo "=== ~/.zshenv: adding Homebrew to PATH for ssh/mosh ==="
+    echo "$zshenv_line" >> ~/.zshenv
+  fi
 
   brew services start colima &>/dev/null && echo "colima registered as startup service" || echo "colima service registration failed"
 
