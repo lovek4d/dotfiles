@@ -64,21 +64,23 @@ test_tmk_picks_a_session() {
 
 # tailscale
 
-test_tssh_resolves_a_named_device_to_its_ip() {
+test_tssh_connects_to_a_named_device_by_name() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
   stub ssh; stub fzf
   load tailscale
   tssh nas
-  assert_called "ssh 100.2.2.2"
+  assert_called "ssh nas"
+  assert_not_called "100.2.2.2"
   assert_not_called "fzf"
 }
 
-test_tssh_picker_ssh_es_to_the_ip_not_the_name() {
+test_tssh_picker_ssh_es_to_the_name_not_the_ip() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
   stub ssh; stub fzf "100.2.2.2 nas"
   load tailscale
   tssh
-  assert_called "ssh 100.2.2.2"
+  assert_called "ssh nas"
+  assert_not_called "100.2.2.2"
 }
 
 test_tssh_unauthed_prompts_for_a_user() {
@@ -86,7 +88,7 @@ test_tssh_unauthed_prompts_for_a_user() {
   stub_fn ssh '[[ "$*" == *BatchMode* ]] && return 255; return 0'
   load tailscale
   tssh nas <<< "alice" 2>/dev/null
-  assert_called "ssh alice@100.2.2.2"
+  assert_called "ssh alice@nas"
 }
 
 test_tssh_unauthed_empty_user_keeps_the_default() {
@@ -94,8 +96,8 @@ test_tssh_unauthed_empty_user_keeps_the_default() {
   stub_fn ssh '[[ "$*" == *BatchMode* ]] && return 255; return 0'
   load tailscale
   tssh nas <<< "" 2>/dev/null
-  assert_called "ssh 100.2.2.2"
-  assert_not_called "@100.2.2.2"
+  assert_called "ssh nas"
+  assert_not_called "@nas"
 }
 
 test_tssh_authed_does_not_prompt() {
@@ -114,7 +116,24 @@ test_tmosh_unauthed_prompts_for_a_user() {
   stub mosh
   load tailscale
   tmosh nas <<< "alice" 2>/dev/null
-  assert_called "mosh-server alice@100.2.2.2"
+  assert_called "mosh-server alice@nas"
+}
+
+test_tscid_picker_copies_the_key_as_the_prompted_user() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
+  stub_fn ssh 'return 255'
+  stub ssh-copy-id; stub fzf "100.2.2.2 nas"
+  load tailscale
+  tscid <<< "alice" 2>/dev/null
+  assert_called "ssh-copy-id alice@nas"
+}
+
+test_tscid_skips_when_key_auth_already_works() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub ssh; stub ssh-copy-id
+  load tailscale
+  tscid nas >/dev/null
+  assert_not_called "ssh-copy-id"
 }
 
 test_tsping_picker_pings_the_name_not_the_ip() {
@@ -134,21 +153,21 @@ test_tssh_unknown_device_does_not_connect() {
   assert_not_called "ssh "
 }
 
-test_tmosh_resolves_a_named_device_to_its_ip() {
+test_tmosh_connects_to_a_named_device_by_name() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
   stub mosh; stub fzf
   load tailscale
   tmosh nas
-  assert_called "mosh --server=PATH=/opt/homebrew/bin:/usr/local/bin:\$PATH mosh-server 100.2.2.2"
+  assert_called "mosh --server=PATH=/opt/homebrew/bin:/usr/local/bin:\$PATH mosh-server nas"
   assert_not_called "fzf"
 }
 
-test_tmosh_picker_moshes_to_the_ip_not_the_name() {
+test_tmosh_picker_moshes_to_the_name_not_the_ip() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
   stub mosh; stub fzf "100.2.2.2 nas"
   load tailscale
   tmosh
-  assert_called "mosh-server 100.2.2.2"
+  assert_called "mosh-server nas"
 }
 
 test_tmosh_cancelled_pick_does_not_connect() {
@@ -169,6 +188,29 @@ test_tmosh_unknown_device_names_the_caller() {
   assert_err $?
   assert_eq "tmosh: device 'nope' not found in tailnet" "$err"
   assert_not_called "mosh --server"
+}
+
+test_tspull_rsyncs_from_the_device_by_name() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub ssh; stub rsync
+  load tailscale
+  stub_rc __is_macos 1; stub __is_macos
+  stub_fn __git_repo_root 'print -r -- "$HOME/dev/repo"'
+  tspull nas
+  assert_called "nas:~/dev/repo/"
+  assert_not_called "100.2.2.2"
+}
+
+test_tspull_outside_a_repo_does_not_prompt() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub_fn ssh 'return 255'; stub rsync
+  load tailscale
+  stub_rc __is_macos 1; stub __is_macos
+  stub_rc __git_repo_root 1; stub __git_repo_root
+  local err
+  err=$(tspull nas <<< "alice" 2>&1)
+  assert_err $?
+  assert_eq "tspull: not in a git repo" "$err"
 }
 
 test_tssw_picker_switches_to_the_id() {
