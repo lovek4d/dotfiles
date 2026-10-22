@@ -14,6 +14,7 @@ tailscale aliases:
     tsu     tailscale up
     tsd     tailscale down
     tsinit  authenticate + join tailnet
+    tssw [tailnet]  switch tailnet/account (fzf)
 
   devices
     tssh [device]   SSH to tailnet device (fzf)
@@ -45,6 +46,17 @@ tsinit() {
     sudo tailscale up
     echo "tailscale connected"
   fi
+}
+
+## switch tailnet/account (inline or fzf pick). The list's current entry
+## carries a trailing '*'; the pick resolves to its ID column.
+tssw() {
+  local target="$1"
+  if [[ -z "$target" ]]; then
+    target=$(tailscale switch --list | awk 'NR>1' | __pick 'switch tailnet> ') || return 1
+    target="${target%% *}"
+  fi
+  tailscale switch "$target"
 }
 
 ## tailnet devices, one "<ip> <name>" per line — the list both pickers read

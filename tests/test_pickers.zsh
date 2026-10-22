@@ -135,6 +135,23 @@ test_tmosh_unknown_device_names_the_caller() {
   assert_not_called "mosh --server"
 }
 
+test_tssw_picker_switches_to_the_id() {
+  stub_fn tailscale 'case "$1" in switch) [[ "$2" == --list ]] && print -rl -- "ID    Tailnet  Account" "bd16  home     me@github*" "a7f2  work     me@corp" ;; esac'
+  stub fzf "a7f2  work     me@corp"
+  load tailscale
+  tssw
+  assert_called "tailscale switch a7f2"
+}
+
+test_tssw_cancelled_pick_does_not_switch() {
+  stub_fn tailscale 'case "$1" in switch) [[ "$2" == --list ]] && print -rl -- "ID  Tailnet  Account" "a7f2  work  me@corp" ;; esac'
+  stub fzf ""
+  load tailscale
+  tssw
+  assert_err $?
+  assert_not_called "tailscale switch a7f2"
+}
+
 # ssh
 
 test_sc_with_arg_skips_the_picker() {
