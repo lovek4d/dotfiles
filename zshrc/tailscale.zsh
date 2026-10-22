@@ -77,11 +77,26 @@ _ts_device_ip() {
   print -r -- "$ip"
 }
 
+## resolve an IP to an ssh target — the bare IP if key auth already works as
+## the local user, else "<user>@<ip>" with the user prompted for (Enter keeps
+## the default). The probe is non-interactive, so an unknown host key or an
+## unreachable device also lands on the prompt.
+_ts_login() {
+  local ip="$1" user
+  if ssh -o BatchMode=yes -o ConnectTimeout=5 "$ip" true &>/dev/null; then
+    print -r -- "$ip"
+    return
+  fi
+  print -n -u2 -- "user for $ip [$USER]: "
+  read -r user
+  print -r -- "${user:+$user@}$ip"
+}
+
 ## SSH to tailnet device (inline or fzf pick)
 tssh() {
   local ip
   ip=$(_ts_device_ip ssh "$1") || return 1
-  ssh "$ip"
+  ssh "$(_ts_login "$ip")"
 }
 
 ## mosh to tailnet device (inline or fzf pick). mosh starts the server over a
@@ -90,7 +105,7 @@ tssh() {
 tmosh() {
   local ip
   ip=$(_ts_device_ip mosh "$1") || return 1
-  mosh --server='PATH=/opt/homebrew/bin:/usr/local/bin:$PATH mosh-server' "$ip"
+  mosh --server='PATH=/opt/homebrew/bin:/usr/local/bin:$PATH mosh-server' "$(_ts_login "$ip")"
 }
 
 ## ping tailnet device (inline or fzf pick)

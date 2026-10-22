@@ -81,6 +81,42 @@ test_tssh_picker_ssh_es_to_the_ip_not_the_name() {
   assert_called "ssh 100.2.2.2"
 }
 
+test_tssh_unauthed_prompts_for_a_user() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub_fn ssh '[[ "$*" == *BatchMode* ]] && return 255; return 0'
+  load tailscale
+  tssh nas <<< "alice" 2>/dev/null
+  assert_called "ssh alice@100.2.2.2"
+}
+
+test_tssh_unauthed_empty_user_keeps_the_default() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub_fn ssh '[[ "$*" == *BatchMode* ]] && return 255; return 0'
+  load tailscale
+  tssh nas <<< "" 2>/dev/null
+  assert_called "ssh 100.2.2.2"
+  assert_not_called "@100.2.2.2"
+}
+
+test_tssh_authed_does_not_prompt() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub ssh
+  load tailscale
+  local err
+  err=$(tssh nas <<< "alice" 2>&1 >/dev/null)
+  assert_eq "" "$err"
+  assert_not_called "alice@"
+}
+
+test_tmosh_unauthed_prompts_for_a_user() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.2.2.2 nas" ;; esac'
+  stub_fn ssh 'return 255'
+  stub mosh
+  load tailscale
+  tmosh nas <<< "alice" 2>/dev/null
+  assert_called "mosh-server alice@100.2.2.2"
+}
+
 test_tsping_picker_pings_the_name_not_the_ip() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" ;; esac'
   stub fzf "100.1.1.1 laptop"
