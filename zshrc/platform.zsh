@@ -30,10 +30,12 @@ __notify() {
 ## (nothing, and no pid, where the platform has no inhibitor)
 __keep_awake() {
   local secs="$1"
+  # stdout to /dev/null: callers capture the pid via $(...), which would
+  # otherwise block until the inhibitor exits
   if __is_macos; then
-    caffeinate -di -t "$secs" & print -r -- $!
+    caffeinate -di -t "$secs" >/dev/null & print -r -- $!
   elif command -v systemd-inhibit >/dev/null 2>&1; then
-    systemd-inhibit --what=idle --why="keep awake" sleep "$secs" & print -r -- $!
+    systemd-inhibit --what=idle --why="keep awake" sleep "$secs" >/dev/null & print -r -- $!
   fi
 }
 

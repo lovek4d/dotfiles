@@ -88,6 +88,20 @@ test_keep_awake_uses_caffeinate_on_macos() {
   assert_called "caffeinate -di -t 60"
 }
 
+test_keep_awake_returns_before_the_inhibitor_exits() {
+  # $(...) waits for EOF on its pipe, so the backgrounded inhibitor must not
+  # hold the substitution's stdout open for its whole lifetime
+  stub_fn caffeinate 'sleep 3'
+  load
+  functions[__is_macos]='return 0'
+  zmodload zsh/datetime
+  local -F start=$EPOCHREALTIME
+  local pid="$(__keep_awake 3)"
+  (( EPOCHREALTIME - start < 1 )) || __fail "__keep_awake blocked until the inhibitor exited"
+  [[ "$pid" == <-> ]] || __fail "expected a pid, got: $pid"
+  kill "$pid" 2>/dev/null
+}
+
 test_press_enter_uses_osascript_on_macos() {
   stub osascript
   load
