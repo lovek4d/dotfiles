@@ -20,6 +20,7 @@ tailscale aliases:
     tssh [device]   SSH to tailnet device (fzf)
     tmosh [device]  mosh to tailnet device (fzf)
     tscid [device]  copy ssh key to tailnet device (fzf)
+    tswho [device]  whois tailnet device: full DNS name, owner (fzf)
     tsping [device] ping tailnet device (fzf)
     tspull [device] rsync-pull cwd's repo root from tailnet device (fzf)
 EOF
@@ -65,22 +66,28 @@ _ts_devices() {
   tailscale status | awk 'NR>1 && $2 != "" { print $1, $2 }'
 }
 
-## resolve a tailnet device to its MagicDNS short name — validated if given,
+## resolve a tailnet device to its "<ip> <name>" line — validated if given,
 ## else fzf pick. Errors name the user-facing command (first non-_ frame).
-_ts_device_name() {
-  local verb="$1" device="$2" name
+_ts_device() {
+  local verb="$1" device="$2" line
   if [[ -z "$device" ]]; then
-    name=$(_ts_devices | __pick "$verb device> ") || return 1
-    print -r -- "${name##* }"
+    _ts_devices | __pick "$verb device> "
     return
   fi
-  name=$(_ts_devices | awk -v d="$device" '$2 == d { print $2; exit }')
-  if [[ -z "$name" ]]; then
+  line=$(_ts_devices | awk -v d="$device" '$2 == d { print; exit }')
+  if [[ -z "$line" ]]; then
     local -a cmds=(${funcstack:#_*})
     echo "${cmds[1]}: device '$device' not found in tailnet" >&2
     return 1
   fi
-  print -r -- "$name"
+  print -r -- "$line"
+}
+
+## resolve a tailnet device to its MagicDNS short name
+_ts_device_name() {
+  local line
+  line=$(_ts_device "$@") || return 1
+  print -r -- "${line##* }"
 }
 
 ## does key auth to a host already work? Non-interactive, so an unknown host
@@ -138,6 +145,14 @@ tscid() {
     return
   fi
   ssh-copy-id "$(_ts_ask_user "$host")"
+}
+
+## whois a tailnet device (inline or fzf pick) — full MagicDNS name, owner,
+## addresses. whois only takes an IP, hence the line rather than the name.
+tswho() {
+  local line
+  line=$(_ts_device whois "$1") || return 1
+  tailscale whois "${line%% *}"
 }
 
 ## ping tailnet device (inline or fzf pick)

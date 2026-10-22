@@ -136,6 +136,24 @@ test_tscid_skips_when_key_auth_already_works() {
   assert_not_called "ssh-copy-id"
 }
 
+test_tswho_picker_queries_the_ip_not_the_name() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" "100.2.2.2 nas" ;; esac'
+  stub fzf "100.2.2.2 nas"
+  load tailscale
+  tswho
+  assert_called "tailscale whois 100.2.2.2"
+}
+
+test_tswho_unknown_device_names_the_caller() {
+  stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" ;; esac'
+  load tailscale
+  local err
+  err=$(tswho nope 2>&1)
+  assert_err $?
+  assert_eq "tswho: device 'nope' not found in tailnet" "$err"
+  assert_not_called "tailscale whois"
+}
+
 test_tsping_picker_pings_the_name_not_the_ip() {
   stub_fn tailscale 'case "$1" in status) print -rl -- "HEADER" "100.1.1.1 laptop" ;; esac'
   stub fzf "100.1.1.1 laptop"
