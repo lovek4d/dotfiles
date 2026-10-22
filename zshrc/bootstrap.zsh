@@ -165,7 +165,7 @@ _zinit_macos() {
 
   echo "=== brew casks ==="
   local cask
-  for cask in google-chrome visual-studio-code raycast alt-tab scroll-reverser macparakeet; do
+  for cask in google-chrome visual-studio-code raycast scroll-reverser macparakeet; do
     if brew list --cask "$cask" &>/dev/null; then
       echo "$cask up to date"
     else
