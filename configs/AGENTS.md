@@ -1,9 +1,3 @@
-## Shell Command Rules
-- NEVER use `cd` to change to the current working directory — you are already there
-- NEVER use `cd` to navigate away from the starting working directory — use relative paths for child paths, absolute paths for everything else
-- NEVER use `git -C <path>` when `<path>` is the current working directory — just run `git` directly
-- When running Bash commands, use paths relative to the current working directory. Do not prefix commands with the absolute path of the working directory.
-
 ## Asking Me Questions
 
 **Always use the AskUserQuestion tool.** Never ask in prose — a question buried in
@@ -41,42 +35,48 @@ __notify "done" && exit 0
 __notify "done" &
 ```
 
-## Git Command Grouping
-- **Group state-changing git commands** into a single `&&`-chained Bash call to minimize permission prompts:
-  - Committing: `git add <files> && git commit -m "..."` (one call, not two)
-  - Stash + switch: `git stash && git switch <branch>` or `git switch <branch> && git stash pop`
-  - Stash + checkout: `git stash && git checkout <branch>` or `git checkout <branch> && git stash pop`
-  - Checkout workflows: `git checkout -b <branch> && git push -u origin <branch>`
-- **Commit and PR descriptions must be based on the actual diff and branch history** (from `git diff`, `git log`, `git status`), not the conversation context. Read the code changes first, then write the description.
-- **Never push unless explicitly asked** to create a PR or push.
-- **When asked to create a PR**, group all commands into minimal Bash calls:
-  - `git add <files> && git commit -m "..." && git push -u origin <branch>` then `gh pr create ...`
-  - Or if already committed: `git push -u origin <branch> && gh pr create ...`
+## Working With Me
+- "Why X?" / "do we need this?" asks for reasoning. Answer and stop; if the
+  reasoning is weak, offer the change rather than making it.
+- Significant work (refactors, extractions, schema changes, rewrites): present
+  the full plan and wait for an explicit go before writing files. "Could X be…?"
+  is thinking out loud — answer it, don't code it.
+- Before building an approved plan, check each "this exists so that X" claim
+  actually holds. Report justifications that died, even where the code survives.
+- Repo doctrine (CLAUDE.md, ADRs) is guidance, not a veto. If a better design
+  contradicts it, argue the merits and propose the doc edit alongside.
+- Use my wording verbatim for copy, labels, anything voice-driven. Propose
+  alternatives explicitly; never swap in a blander synonym.
 
-## Minimizing Permission Prompts
+## Code
+- Simplify means less structure — fewer abstractions, cleaner flow, less state.
+  Never shorter names.
+- Comments describe what the code does now. History (tried, measured, reverted)
+  goes in the repo's decision log (e.g. `docs/adr/`) with a one-line pointer;
+  relocate before deleting.
+- Don't count things in prose ("three callers") unless the count can't change
+  by definition. Name the relation; tooling counts it.
+- No defensive checks for impossible states. If firing would change nothing,
+  delete it; if it means a real bug, make it a hard error. No debug-only warnings.
+- Place logic by its actual consumers (grep them), not by resemblance to what
+  already lives there.
+- Cache only within a lifetime where the inputs can't change; never cache what
+  can be edited underneath.
 
-### Prefer Dedicated Tools Over Bash
-Dedicated tools (Read, Edit, Write) never trigger permission prompts. Prefer
-them over equivalent Bash commands whenever possible:
-- Reading files: **Read** not `cat`, `head`, `tail`
-- Editing files: **Edit** not `sed`, `awk`
-- Writing files: **Write** not shell redirection
+## Evidence
+- Before recommending from a measurement, confirm it was taken on the real
+  artifact at the real scale. A proxy number is a hypothesis.
+- When a fix depends on unverified framework ordering or timing, instrument
+  first (throwaway logs, one run) before building the mechanism.
+- Wall-clock timing tests warn, not fail; hard-fail only at ~5x the budget.
 
-For file/content search there is no dedicated tool — use the allowlisted Bash helpers below.
+## Git
+- Commit and PR descriptions come from the actual diff and branch history, not
+  the conversation.
+- Never push unless asked.
+- Small single asks: commit on the current branch, main included. Branch for
+  multi-commit work or PRs.
 
-Reserve Bash for system commands and operations with no dedicated tool equivalent. **When Bash is necessary**, these modern helpers are installed and (where read-only) allowlisted — prefer them over POSIX equivalents:
-- `fd` over `find` for file discovery (allowlisted)
-- `rg` over `grep` for content search (allowlisted)
-- `jq` for JSON parsing
-- `bat` for paginated file view (rare; Read tool covers most cases)
-- `sd` for stream find/replace — **modifies files in-place by default; use the Edit tool for file changes**
-- `tldr <cmd>` for command cheatsheets
-
-### Batch Permission-Requiring Operations Toward the End
-- Do all reading, exploration, and planning first (all allowlisted/tool-based)
-- Group permission-requiring Bash calls as late as possible in a task:
-  - File deletions (`rm`), directory creation (`mkdir`)
-  - Package installs (`npm install`, `pip install`, `brew install`)
-  - Any remaining shell writes
-- This concentrates prompts into one burst at the end rather than scattering
-  interruptions throughout autonomous work
+## Shell
+- Installed: `fd`, `rg`, `jq`, `sd`, `bat`, `tldr`. Prefer `fd`/`rg` over
+  `find`/`grep`.
