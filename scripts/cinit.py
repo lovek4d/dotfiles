@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Point ~/.claude at this repo: settings, hooks, statusline, agent skills.
+"""Point ~/.claude at this repo: settings, agent skills.
 
 The permission allowlist is data, not code — it lives in
 configs/claude-permissions.json.
@@ -38,18 +38,6 @@ if os.path.exists(settings_path):
     with open(settings_path) as f:
         settings = json.load(f)
 
-hook = link_config(os.path.join(REPO, "scripts/claude/hooks/no-paths.py"),
-                   os.path.expanduser("~/.claude/hooks/no-paths.py"))
-statusline = link_config(os.path.join(REPO, "scripts/claude/statusline.sh"),
-                         os.path.expanduser("~/.claude/statusline.sh"))
-
-settings["statusLine"] = {"type": "command", "command": statusline}
-settings["hooks"] = {
-    "PreToolUse": [
-        {"matcher": "Bash",
-         "hooks": [{"type": "command", "command": f"python3 {hook}", "timeout": 5}]}
-    ],
-}
 settings["showClearContextOnPlanAccept"] = True
 
 with open(os.path.join(REPO, "configs/claude-permissions.json")) as f:
@@ -62,7 +50,7 @@ merge_unique(perms.setdefault("deny", []), configured["deny"])
 with open(settings_path, "w") as f:
     json.dump(settings, f, indent=2)
 print(f"updated {settings_path} "
-      f"({len(configured['allow'])} allow, {len(configured['deny'])} deny, no-paths hook)")
+      f"({len(configured['allow'])} allow, {len(configured['deny'])} deny)")
 
 # repo-authored skills -> every agent's skills dir; adding a skill needs no edit here
 skills_src = os.path.join(REPO, "configs/agents/skills")

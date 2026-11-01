@@ -96,7 +96,7 @@ zinit() {
   fi
 
   echo "=== done ==="
-  echo "run 'ainit' for Claude settings/hooks and optional agent skills/plugins"
+  echo "run 'ainit' for Claude settings and optional agent skills/plugins"
   echo "run 'winit' for whisper voice transcription (opt-in)"
   source ~/.zshrc
 }
