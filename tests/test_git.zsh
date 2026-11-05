@@ -235,4 +235,21 @@ test_gdl_by_pattern_deletes_matches() {
   assert_not_called "-- main"
 }
 
+# ginit
+
+test_ginit_points_git_at_gh_when_logged_in() {
+  stub git "Someone"; stub gh
+  load git
+  ginit >/dev/null
+  assert_called "gh auth setup-git"
+}
+
+test_ginit_skips_gh_setup_when_logged_out() {
+  stub git "Someone"; stub gh; stub_rc gh 1
+  load git
+  ginit >/dev/null
+  assert_called "gh auth status"
+  assert_not_called "gh auth setup-git"
+}
+
 run_tests

@@ -94,6 +94,13 @@ ginit() {
   else
     echo "git config already set for $name <$email>"
   fi
+  # HTTPS GitHub remotes authenticate through gh's token. The default
+  # osxkeychain helper can't unlock over ssh/mosh and falls back to a prompt.
+  if gh auth status >/dev/null 2>&1; then
+    gh auth setup-git && echo "git uses gh for github.com credentials"
+  else
+    echo "run 'gh auth login', then 'ginit' again, so git uses gh for github.com credentials"
+  fi
 }
 
 # core
